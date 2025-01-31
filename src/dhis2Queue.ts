@@ -35,8 +35,10 @@ const worker = new Worker<
                 username: process.env.DHIS2_USERNAME ?? "",
                 password: process.env.DHIS2_PASSWORD ?? "",
             },
+            headers: {
+                "Content-Type": "application/json",
+            },
         });
-        console.log("api:", api);
         try {
             console.log("Fetching organisation units");
             const {
@@ -73,10 +75,10 @@ const worker = new Worker<
                             String(new Date().getMilliseconds),
                             query,
                         );
-                       /* await layering3Queue.add(
+                        await layering3Queue.add(
                             String(new Date().getMilliseconds),
                             query,
-                        );*/
+                        );
                     } else if (
                         generate &&
                         data.length > 0 &&

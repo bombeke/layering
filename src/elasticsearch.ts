@@ -1,9 +1,24 @@
+// @ts-nocheck
 import { Client } from "@elastic/elasticsearch";
 import { BulkResponse } from "@elastic/elasticsearch/lib/api/types";
 import chunk from 'lodash/chunk';
 
-export const client = new Client({ node: "http://localhost:9200" });
-
+export const client = new Client({ 
+    node: "http://localhost:9200"
+});
+/** 
+export const  runTest = async()=> {
+    try {
+        const health = await client.cluster.health();
+        console.log("✅ Elasticsearch Health:", health.status);
+    } 
+    catch (error) {
+        console.error("❌ Elasticsearch Connection Failed:", error);
+    }
+}
+  
+runTest();
+**/
 const processBulkInserts = (inserted: BulkResponse) => {
     const total = inserted.items.length;
     const errors = inserted.items.flatMap(({ index }) => {
