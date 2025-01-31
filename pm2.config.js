@@ -4,7 +4,8 @@ module.exports = {
         name: "search-index-app",
         script: "bun",
         args: "run src/index.ts",
-        instances: 5, // Number of instances to run (e.g., scale to multiple CPUs)
+        instances: 3, // Number of instances to run (e.g., scale to multiple CPUs)
+        exec_mode: "cluster",
         autorestart: true, // Restart on crash or failure
         watch: false, // Enable to restart on file changes
         max_memory_restart: "1G", // Restart if memory usage exceeds 1GB
