@@ -1,5 +1,6 @@
 import { Client } from "@elastic/elasticsearch";
 import { BulkResponse } from "@elastic/elasticsearch/lib/api/types";
+import chunk from 'lodash/chunk';
 
 export const client = new Client({ node: "http://localhost:9200" });
 
@@ -15,15 +16,24 @@ const processBulkInserts = (inserted: BulkResponse) => {
     console.log(errors);
 };
 
+/**
+ * Index a given array of documents in chunks of 250.
+ *
+ * @param index - The name of the index to use.
+ * @param data - The array of documents to index.
+ * @returns An array of promises that resolve when the respective chunk of documents has been indexed.
+ */
 export const indexBulk = async (index: string, data: any[]) => {
-    const body = data.flatMap((doc) => [
-        { index: { _index: index, _id: doc["id"] } },
-        doc,
-    ]);
-    const response = await client.bulk({
-        refresh: true,
-        body,
+    return chunk(data, 250).map(async(c: any[],i:number) =>{
+        const body = c.flatMap((doc) => [
+            { index: { _index: index, _id: doc["id"] } },
+            doc,
+        ]);
+        const response = await client.bulk({
+            refresh: true,
+            body,
+        });
+        console.log("===============Indexed========#",i)
+        return processBulkInserts(response);
     });
-
-    processBulkInserts(response);
 };

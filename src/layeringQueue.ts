@@ -1899,16 +1899,16 @@ const worker = new Worker<QueryDslQueryContainer>(
                     // dayjs().subtract(8, "quarters"),
                     // dayjs().subtract(7, "quarters"),
                     dayjs().subtract(6, "quarters"),
-                    //dayjs().subtract(5, "quarters"),
-                    //dayjs().subtract(4, "quarters"),
-                    //dayjs().subtract(3, "quarters"),
-                    //dayjs().subtract(2, "quarters"),
+                    dayjs().subtract(5, "quarters"),
+                    dayjs().subtract(4, "quarters"),
+                    dayjs().subtract(3, "quarters"),
+                    dayjs().subtract(2, "quarters"),
                     dayjs().subtract(1, "quarters"),
                     dayjs(),
                 ],
                 trackedEntityInstances: documents,
             });
-
+            console.log("=============Generating Layering==============");
             await indexBulk("layering", layering);
         });
     },
