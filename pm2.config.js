@@ -1,8 +1,9 @@
 module.exports = {
     apps: [
       {
-        name: "dev-app",
-        script: "pnpm dev:app",
+        name: "search-index-app",
+        script: "bun",
+        args: "run src/index.ts",
         instances: 5, // Number of instances to run (e.g., scale to multiple CPUs)
         autorestart: true, // Restart on crash or failure
         watch: false, // Enable to restart on file changes
