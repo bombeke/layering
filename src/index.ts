@@ -215,7 +215,7 @@ app.get(
     },
 );
 
-const port = 3001;
+const port = 3010;
 console.log(`Server is running on port ${port}`);
 
 serve({
