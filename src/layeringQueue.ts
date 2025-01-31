@@ -53,6 +53,7 @@ import {
     scroll,
     scroll3,
 } from "./utils";
+import { logger } from "./logger";
 
 dayjs.extend(isoWeek);
 dayjs.extend(quarterOfYear);
@@ -1887,8 +1888,11 @@ const generateLayering = (options: {
 const worker = new Worker<QueryDslQueryContainer>(
     "query",
     async (job) => {
+        logger.info("=============Starting Layering==============");
         await scroll3("RDEklSXCD4C", job.data, async (documents) => {
+            logger.info("=============Fetching Data==============");
             const allData = await fetchData(documents);
+            logger.info("=============Generating Layering==============");
             const layering = generateLayering({
                 ...allData,
                 periods: [
@@ -1908,7 +1912,7 @@ const worker = new Worker<QueryDslQueryContainer>(
                 ],
                 trackedEntityInstances: documents,
             });
-            console.log("=============Generating Layering==============");
+            logger.info("=============Generating Index for Layering==============");
             await indexBulk("layering", layering);
         });
     },

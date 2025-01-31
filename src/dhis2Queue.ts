@@ -7,6 +7,7 @@ import { connection } from "./redis";
 import { processOrganisations, queryDHIS2Data } from "./utils";
 import { layering2Queue } from "./layering2Queue";
 import { layering3Queue } from "./layering3Queue";
+import { logger } from "./logger";
 
 export const dhis2Queue = new Queue<
     {
@@ -101,8 +102,10 @@ const worker = new Worker<
 
 worker.on("completed", (job) => {
     console.log(`${job.id} has completed!`);
+    logger.info(`${job.id} has completed!`)
 });
 
 worker.on("failed", (job, err) => {
     console.log(`${job?.id} has failed with ${err.message}`);
+    logger.info(`${job?.id} has failed with ${err.message}`);
 });
