@@ -8,9 +8,7 @@ module.exports = {
       },
       {
         name: "dev-app",
-        script: "pnpm dev:app",
-        args: "src/index.ts",
-        interpreter: "node",
+        script: "pnpm dev:app"
       }
     ],
   };
