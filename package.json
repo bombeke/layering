@@ -2,6 +2,7 @@
     "scripts": {
         "dev": "tsx watch src/index.ts",
         "dev:app": "tsx src/index.ts",
+        "prod:app": "bun run src/index.ts",
         "build": "tsc"
     },
     "dependencies": {
