@@ -65,8 +65,9 @@ const worker = new Worker<{
             console.log("Adding job to layering queue");
             const job = await layeringQueue.add(instance, query);
             return job;
-        } catch (error: any) {
-            console.log(error?.message);
+        } 
+        catch (error: any) {
+            console.log("Instance worker error: ",error?.message);
             return error;
         }
     },
@@ -74,9 +75,9 @@ const worker = new Worker<{
 );
 
 worker.on("completed", (job) => {
-    console.log(`${job.id} has completed!`);
+    console.log(`Instance job ${job.id} has completed!`);
 });
 
 worker.on("failed", (job, err) => {
-    console.log(`${job?.id} has failed with ${err.message}`);
+    console.log(`Instance job ${job?.id} has failed with ${err.message}`);
 });

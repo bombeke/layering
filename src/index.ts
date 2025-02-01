@@ -80,7 +80,6 @@ app.post(
         }),
     ),
     async (c) => {
-        console.log("===Start indexing===")
         const { others, ...rest } = c.req.valid("json");
         const job = await dhis2Queue.add(rest.program, { ...rest, ...others });
         return c.json(job);
