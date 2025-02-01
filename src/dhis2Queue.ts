@@ -69,6 +69,7 @@ const worker = new Worker<
                  * @param data - array of tracked entity instance ids
                  */
                 callback: async (data: string[]) => {
+                    console.log("Adding data to layering queues",generate,"1:",data.length,"2:",program);
                     if (
                         generate &&
                         data.length > 0 &&
@@ -109,16 +110,16 @@ const worker = new Worker<
                 },
             });
         } catch (error) {
-            console.log("Worker Error:",error);
+            console.log("DHIS2 queue worker error:",error);
         }
     },
     { connection },
 );
 
 worker.on("completed", (job) => {
-    console.log(`Job ${job.id} has completed!`);
+    console.log(`DHIS2 Job ${job.id} has completed!`);
 });
 
 worker.on("failed", (job, err) => {
-    console.log(`Job ${job?.id} has failed with ${err.message}`);
+    console.log(`DHIS2 Job ${job?.id} has failed with ${err.message}`);
 });

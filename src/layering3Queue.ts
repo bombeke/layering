@@ -419,9 +419,9 @@ const worker = new Worker<QueryDslQueryContainer>(
 );
 
 worker.on("completed", (job) => {
-    console.log(`${job.id} has completed!`);
+    console.log(`Layering 3 job ${job.id} has completed!`);
 });
 
 worker.on("failed", (job, err) => {
-    console.log(`${job?.id} has failed with ${err.message}`);
+    console.log(`Layering 3 job ${job?.id} has failed with ${err.message}`);
 });

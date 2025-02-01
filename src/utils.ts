@@ -124,8 +124,10 @@ export const scroll = async (
     }
     const scrollSearch = client.helpers.scrollSearch(query);
     let documents: any[] = [];
-    for await (const result of scrollSearch) {
-        documents = documents.concat(result.documents);
+    if( Object.keys(scrollSearch).length > 0){
+        for await (const result of scrollSearch) {
+            documents = documents.concat(result.documents);
+        }
     }
     return groupBy(documents, "trackedEntityInstance");
 };
@@ -140,8 +142,10 @@ export const scroll2 = async (index: string) => {
     };
     const scrollSearch = client.helpers.scrollSearch(query);
     let documents: any[] = [];
-    for await (const result of scrollSearch) {
-        documents = documents.concat(result.documents);
+    if( Object.keys(scrollSearch).length > 0){
+        for await (const result of scrollSearch) {
+            documents = documents.concat(result.documents);
+        }
     }
     return documents;
 };
@@ -157,10 +161,11 @@ export const scroll3 = async (
         size: 100,
     };
     const scrollSearch = client.helpers.scrollSearch(query);
-    for await (const result of scrollSearch) {
-        await callback(result.documents);
+    if( Object.keys(scrollSearch).length > 0){
+        for await (const result of scrollSearch) {
+            await callback(result.documents);
+        }
     }
-
     console.log("Done");
 };
 
@@ -1445,7 +1450,7 @@ export const queryDHIS2Data = async ({
     }>;
     callback?: (instances: string[]) => void;
 } & Record<string, any>) => {
-    const maxPages = 10;
+    const maxPages = 10000;
     const instances: string[] = [];
     const calculatedEvents: any[] = [];
 

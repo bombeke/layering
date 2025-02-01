@@ -27,17 +27,20 @@ const processBulkInserts = (inserted: BulkResponse) => {
  * @returns An array of promises that resolve when the respective chunk of documents has been indexed.
  */
 export const indexBulk = async (index: string, data: any[]) => {
-    const body = c.flatMap((doc) =>{
-        console.log("index doc:",doc);
+    const body = data.flatMap((doc) =>{
         return [
-            { index: { _index: index, _id: doc["id"] } },
+            { 
+                index: { 
+                    _index: index, 
+                    //_id: doc["id"] 
+                } 
+            },
             doc,
         ];
     });
-    console.log("index body:",body);
     const response = await client.bulk({
         refresh: true,
-        body,
+        body
     });
     console.log("Response:",response)
     console.log("===============Indexed========")
