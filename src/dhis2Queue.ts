@@ -8,6 +8,7 @@ import { processOrganisations, queryDHIS2Data } from "./utils";
 import { layering2Queue } from "./layering2Queue";
 import { layering3Queue } from "./layering3Queue";
 import { logger } from "./logger";
+import "dotenv/config"; 
 
 export const dhis2Queue = new Queue<
     {
@@ -53,13 +54,21 @@ const worker = new Worker<
                 },
             });
             const processedUnits = processOrganisations(organisationUnits);
-
+            console.log("Querying DHIS2 for indexing");
             await queryDHIS2Data({
                 program,
                 page,
                 processedUnits,
                 api,
                 ...others,
+        /**
+         * Callback to be executed when data is fetched from dhis2.
+         * This callback is responsible for adding the data to the layering queues.
+         * If the program is RDEklSXCD4C, it adds the data to the layering and layering3 queues.
+         * If the program is lMC8XN5Lanc, it adds the data to the layering2 queue.
+         * If the program is neither, it logs a message saying that the callback is not implemented.
+         * @param data - array of tracked entity instance ids
+         */
                 callback: async (data: string[]) => {
                     if (
                         generate &&
@@ -79,7 +88,8 @@ const worker = new Worker<
                             String(new Date().getMilliseconds),
                             query,
                         );
-                    } else if (
+                    } 
+                    else if (
                         generate &&
                         data.length > 0 &&
                         program === "lMC8XN5Lanc"
@@ -94,10 +104,13 @@ const worker = new Worker<
                             query,
                         );
                     }
+                    else{
+                        console.log("Not implemented");
+                    }
                 },
             });
         } catch (error) {
-            console.log(error);
+            console.log("Worker Error:",error);
         }
     },
     { connection },

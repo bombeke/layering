@@ -6,19 +6,7 @@ import chunk from 'lodash/chunk';
 export const client = new Client({ 
     node: "http://localhost:9200"
 });
-/** 
-export const  runTest = async()=> {
-    try {
-        const health = await client.cluster.health();
-        console.log("✅ Elasticsearch Health:", health.status);
-    } 
-    catch (error) {
-        console.error("❌ Elasticsearch Connection Failed:", error);
-    }
-}
-  
-runTest();
-**/
+
 const processBulkInserts = (inserted: BulkResponse) => {
     const total = inserted.items.length;
     const errors = inserted.items.flatMap(({ index }) => {
@@ -39,16 +27,19 @@ const processBulkInserts = (inserted: BulkResponse) => {
  * @returns An array of promises that resolve when the respective chunk of documents has been indexed.
  */
 export const indexBulk = async (index: string, data: any[]) => {
-    return chunk(data, 250).map(async(c: any[],i:number) =>{
-        const body = c.flatMap((doc) => [
+    const body = c.flatMap((doc) =>{
+        console.log("index doc:",doc);
+        return [
             { index: { _index: index, _id: doc["id"] } },
             doc,
-        ]);
-        const response = await client.bulk({
-            refresh: true,
-            body,
-        });
-        console.log("===============Indexed========#",i)
-        return processBulkInserts(response);
+        ];
     });
+    console.log("index body:",body);
+    const response = await client.bulk({
+        refresh: true,
+        body,
+    });
+    console.log("Response:",response)
+    console.log("===============Indexed========")
+    return processBulkInserts(response);
 };

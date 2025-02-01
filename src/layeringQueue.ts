@@ -1889,6 +1889,7 @@ const worker = new Worker<QueryDslQueryContainer>(
     "query",
     async (job) => {
         logger.info("=============Starting Layering==============");
+        console.log("job data:", job.data);
         await scroll3("RDEklSXCD4C", job.data, async (documents) => {
             logger.info("=============Fetching Data==============");
             const allData = await fetchData(documents);
@@ -1896,12 +1897,12 @@ const worker = new Worker<QueryDslQueryContainer>(
             const layering = generateLayering({
                 ...allData,
                 periods: [
-                    // dayjs().subtract(12, "quarters"),
-                    // dayjs().subtract(11, "quarters"),
-                    // dayjs().subtract(10, "quarters"),
-                    // dayjs().subtract(9, "quarters"),
-                    // dayjs().subtract(8, "quarters"),
-                    // dayjs().subtract(7, "quarters"),
+                    dayjs().subtract(12, "quarters"),
+                    dayjs().subtract(11, "quarters"),
+                    dayjs().subtract(10, "quarters"),
+                    dayjs().subtract(9, "quarters"),
+                    dayjs().subtract(8, "quarters"),
+                    dayjs().subtract(7, "quarters"),
                     dayjs().subtract(6, "quarters"),
                     dayjs().subtract(5, "quarters"),
                     dayjs().subtract(4, "quarters"),

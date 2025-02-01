@@ -1212,15 +1212,36 @@ export const insertData = async ({
     program: string;
 }) => {
     const foundEvents = groupBy(calculatedEvents, "programStage");
-    const requests = Object.entries(foundEvents).flatMap(([stage, events]) => {
-        return chunk(events, 250).map((c) => indexBulk(stage.toLowerCase(), c));
-    });
-    await Promise.all([
-        ...chunk(instances, 250).map((c) =>
-            indexBulk(program.toLowerCase(), c),
-        ),
-        ...requests,
-    ]);
+    if(Object.entries(foundEvents).length === 0) {
+        return [];
+    }
+    else{
+        const requests = Object.entries(foundEvents).flatMap(([stage, events]) => {
+            if (events.length === 0) {
+                return [];
+            }
+            else{
+                console.log("Start promise stage")
+                const chunkedEvents = chunk(events, 250).map((c) => indexBulk(stage.toLowerCase(), c));
+                console.log("Reached end of promise stage");
+                return chunkedEvents;
+            }
+        });
+        if(instances.length === 0) {
+            return [];
+        }
+        else{
+            console.log("start of promise")
+            await Promise.all([
+                ...chunk(instances, 250).map((c) =>
+                    indexBulk(program.toLowerCase(), c),
+                ),
+                ...requests,
+            ]);
+            console.log("Reached end of promise");
+            return [];
+        }
+    }
 };
 
 export const convertBoolToYesNo = (value: "true" | "false") => {
@@ -1387,16 +1408,35 @@ export const convertViralStatus = (status: string) => {
     return viralLoadStatuses[status] ?? "";
 };
 
+    /**
+     * Query DHIS2 API for tracked entity instances based on given program
+     * and other parameters. The function will iterate through the pages
+     * of results and call the callback function with the new instances
+     * after each page of results. After all pages have been processed,
+     * the function will call insertData to save the instances to elastic
+     * search.
+     *
+     * @param {object} options - options object
+     * @param {string} options.program - program to query
+     * @param {AxiosInstance} options.api - axios instance with configured
+     *                                     base url and auth
+     * @param {object} options.processedUnits - dictionary with sub_county
+     *                                        as key and objects with
+     *                                        subCounty, district and
+     *                                        orgUnitName as value
+     * @param {function} [options.callback] - function to call after each
+     *                                        page of results
+     * @param {*} options.otherParams - other parameters to pass to the
+     *                                  api query
+     */
 export const queryDHIS2Data = async ({
     api,
-    page = 1,
     program,
     processedUnits,
     callback,
-    ...others
+    ...otherParams
 }: {
     program: string;
-    page?: number;
     api: AxiosInstance;
     processedUnits: Dictionary<{
         subCounty: string;
@@ -1405,47 +1445,52 @@ export const queryDHIS2Data = async ({
     }>;
     callback?: (instances: string[]) => void;
 } & Record<string, any>) => {
-    let pageCount = 1;
-    do {
-        let params: Record<string, any> = {
-            ...others,
-            page,
+    const maxPages = 10;
+    const instances: string[] = [];
+    const calculatedEvents: any[] = [];
+
+    let totalPageCount = 1;
+
+    for (let pageCount = 1; pageCount <= Math.min(totalPageCount, maxPages); pageCount++) {
+        const params: any = {
+            ...otherParams,
+            page: pageCount,
             program,
         };
         if (pageCount === 1) {
-            params = { ...params, totalPages: true };
+            params.totalPages = true;
         }
-        console.log(`Fetching data for page ${page} of ${pageCount}`);
+
         const {
-            data: { trackedEntityInstances, ...rest },
+            data: { trackedEntityInstances, pager },
         } = await api.get<{
             trackedEntityInstances: Array<any>;
             pager: { pageCount: number };
-        }>("trackedEntityInstances.json", {
-            params,
-        });
-        if (pageCount === 1 && rest.pager && rest.pager.pageCount) {
-            pageCount = rest.pager.pageCount;
+        }>("trackedEntityInstances.json", { params });
+
+        if (pageCount === 1 && pager.pageCount) {
+            totalPageCount = pager.pageCount;
         }
+
         if (trackedEntityInstances.length > 0) {
-            const { instances, calculatedEvents } = flattenInstances(
+            const { instances: newInstances, calculatedEvents: newEvents } = flattenInstances(
                 trackedEntityInstances,
                 processedUnits,
             );
-            console.log(`Indexing data for ${page} of ${pageCount}`);
-            await insertData({ instances, calculatedEvents, program });
-
-            if (callback !== undefined) {
-                callback(
-                    trackedEntityInstances.map(
-                        ({ trackedEntityInstance }) => trackedEntityInstance,
-                    ),
-                );
+            instances.push(...(newInstances as any));
+            calculatedEvents.push(...newEvents);
+            if (callback) {
+                callback(instances);
             }
         }
-        page = page + 1;
-    } while (page <= pageCount);
+    }
+    console.log("Processing instances: ",instances.length);
+    if (instances.length > 0) {
+        console.log("========== Start inserting index data ==========");
+        await insertData({ instances, calculatedEvents, program });
+    }
 };
+
 
 export const getGraduationAssessment = (currentGraduationAssessment: any) => {
     const graduationAssessment = [
