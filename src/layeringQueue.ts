@@ -127,6 +127,7 @@ const fetchData = async (trackedEntityInstances: any[]) => {
     );
     const allHVATAssessments = await scroll("sYE3K7fFM4Y", allInstances);
     const indexCases = await scroll("HEWq6yr4cs5", allInstances);
+    console.log("indexCases", indexCases);
     const allGraduationAssessments = await scroll(
         "Cx35Elpu330",
         allInstances,
@@ -326,7 +327,7 @@ const generateLayering = (options: {
             trackedEntityInstance,
             beneficiaryId: HLKc2AKR9jW,
             e0zEpTw7IH6,
-            tHCT4RKXoiU,
+            tHCT4RKXoiU, // Household code
             enrollmentDate,
             type: l4jlzkYsUoR,
             district,
@@ -339,7 +340,7 @@ const generateLayering = (options: {
             N1nMqKtYKvI,
             sex: CfpoFtRmK1z,
             umqeJCVp4Zq,
-            householdCode: r10igcWrpoH,
+            householdCode: r10igcWrpoH, // Household code
             level1,
             level2,
             level3,

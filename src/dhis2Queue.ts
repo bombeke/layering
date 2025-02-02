@@ -55,64 +55,84 @@ const worker = new Worker<
                 },
             });
             const processedUnits = processOrganisations(organisationUnits);
+            if( program === "HEWq6yr4cs5"){
+                console.log("=== Starting indexing for HouseHold Program ===");
+                await queryDHIS2Data({
+                    ...others,
+                    page,
+                    processedUnits,
+                    api,
+                    program: "HEWq6yr4cs5",
+                });
+            }
+            else{
+                await queryDHIS2Data({
+                    program,
+                    page,
+                    processedUnits,
+                    api,
+                    ...others,
+                    /**
+                     * Callback to be executed when data is fetched from dhis2.
+                     * This callback is responsible for adding the data to the layering queues.
+                     * If the program is RDEklSXCD4C, it adds the data to the layering and layering3 queues.
+                     * If the program is lMC8XN5Lanc, it adds the data to the layering2 queue.
+                     * If the program is neither, it logs a message saying that the callback is not implemented.
+                     * @param data - array of tracked entity instance ids
+                     */
+                    callback: async (data: string[]) => {
+                        console.log("Adding data to layering queues: ",data.length," items for program - ",program);
+                        if (
+                            generate &&
+                            data.length > 0 &&
+                            program === "RDEklSXCD4C"
+                        ) {
+                            chunk(data, 250).map(async(c) =>{
+                                const query: QueryDslQueryContainer = {
+                                    terms: {
+                                        "trackedEntityInstance.keyword": c,
+                                    },
+                                };
+                                await layeringQueue.add(
+                                    String(new Date().getMilliseconds),
+                                    query,
+                                );
+                            });
 
-            await queryDHIS2Data({
-                program,
-                page,
-                processedUnits,
-                api,
-                ...others,
-                /**
-                 * Callback to be executed when data is fetched from dhis2.
-                 * This callback is responsible for adding the data to the layering queues.
-                 * If the program is RDEklSXCD4C, it adds the data to the layering and layering3 queues.
-                 * If the program is lMC8XN5Lanc, it adds the data to the layering2 queue.
-                 * If the program is neither, it logs a message saying that the callback is not implemented.
-                 * @param data - array of tracked entity instance ids
-                 */
-                callback: async (data: string[]) => {
-                    console.log("Adding data to layering queues: ",data.length," items for program - ",program);
-                    if (
-                        generate &&
-                        data.length > 0 &&
-                        program === "RDEklSXCD4C"
-                    ) {
-                        chunk(data, 250).map(async(c) =>{
+                            chunk(data, 250).map(async(c3) =>{
+                                const query3: QueryDslQueryContainer = {
+                                    terms: {
+                                        "trackedEntityInstance.keyword": c3,
+                                    },
+                                };
+                                await layering3Queue.add(
+                                    String(new Date().getMilliseconds),
+                                    query3,
+                                );
+                            });
+                        
+                        } 
+                        else if (
+                            generate &&
+                            data.length > 0 &&
+                            program === "lMC8XN5Lanc"
+                        ) {
                             const query: QueryDslQueryContainer = {
                                 terms: {
-                                    "trackedEntityInstance.keyword": c,
+                                    "trackedEntityInstance.keyword": data,
                                 },
                             };
-                            await layeringQueue.add(
+                            await layering2Queue.add(
                                 String(new Date().getMilliseconds),
                                 query,
                             );
-                            await layering3Queue.add(
-                                String(new Date().getMilliseconds),
-                                query,
-                            );
-                        });
-                    } 
-                    else if (
-                        generate &&
-                        data.length > 0 &&
-                        program === "lMC8XN5Lanc"
-                    ) {
-                        const query: QueryDslQueryContainer = {
-                            terms: {
-                                "trackedEntityInstance.keyword": data,
-                            },
-                        };
-                        await layering2Queue.add(
-                            String(new Date().getMilliseconds),
-                            query,
-                        );
-                    }
-                    else{
-                        console.log("Not implemented");
-                    }
-                },
-            });
+                        }
+                        else{
+                            console.log("Not implemented");
+                        }
+                    },
+                });
+            }
         } 
         catch (error) {
             console.log("DHIS2 queue worker error:",error);

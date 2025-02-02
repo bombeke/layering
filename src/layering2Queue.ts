@@ -36,10 +36,10 @@ const fetchData = async (trackedEntityInstances: any[]) => {
 };
 const fetchActivities = async () => {
     const allSessions = await scroll2("IXxHJADVCkb");
-    return allSessions.reduce((acc, b) => {
-        acc[b["trackedEntityInstance"]] = b;
+    return allSessions.reduce((acc, session) => {
+        acc[session["trackedEntityInstance"]] = session;
         return acc;
-    });
+    },{});
 };
 
 const mapping2: any = {

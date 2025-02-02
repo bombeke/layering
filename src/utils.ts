@@ -1487,9 +1487,8 @@ export const queryDHIS2Data = async ({
             calculatedEvents.push(...newEvents);
         }
     }
-    console.log("Processing instances: ",instances.length);
+    console.log("Processing instances: ",instances.length, " for ", program);
     if (instances.length > 0) {
-        console.log("========== Start inserting index data ==========");
         await insertData({ instances, calculatedEvents, program });
         if (callback) {
             callback(instances);
