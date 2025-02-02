@@ -1285,11 +1285,11 @@ export const insertData = async ({
             return [];
         }
         else{
-            return chunk(events, 250).map((c) => indexBulk(stage.toLowerCase(), c));
+            return chunk(events, 1000).map((c) => indexBulk(stage.toLowerCase(), c));
         }
     });
     await Promise.all([
-        ...chunk(instances || [], 250).map((c) =>indexBulk(program.toLowerCase(), c)),
+        ...chunk(instances || [], 1000).map((c) =>indexBulk(program.toLowerCase(), c)),
         ...requests,
     ]);
 };

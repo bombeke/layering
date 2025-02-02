@@ -71,10 +71,12 @@ const generateLayering = (options: {
     allGroupActivityBeneficiaries: { [key: string]: any[] };
     allOldGroupActivitySessions: { [key: string]: any[] };
 }) => {
+    
     const { trackedEntityInstances, allSessions, periods, activities } =
         options;
     let layering: any[] = [];
-
+    console.log("Activities",activities);
+    console.log("GP sessions",allSessions);
     const sessionMap = sessions.reduce<Record<string, string[]>>(
         (acc, session) => {
             acc[session.name] = session.options.map((o) => o.code);
@@ -88,6 +90,7 @@ const generateLayering = (options: {
         huFucxA3e5c, // name of beneficiary
         CfpoFtRmK1z, // sex
         N1nMqKtYKvI, // dob
+        HLKc2AKR9jW, //Main beneficiaryId
         enrollmentDate,
         deleted,
         inactive,
@@ -348,7 +351,8 @@ const generateLayering = (options: {
             }, {});
 
             layering.push({
-                X4pNSt9UzOw,
+                //beneficiaryId: X4pNSt9UzOw,
+                beneficiaryId:  HLKc2AKR9jW,
                 beneficiaryName: huFucxA3e5c,
                 sex: CfpoFtRmK1z,
                 dob: N1nMqKtYKvI,
