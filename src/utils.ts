@@ -152,6 +152,49 @@ export const scroll2 = async (index: string) => {
     return documents;
 };
 
+export const scroll4 = async (
+    index: string,
+    trackedEntityInstances: string[],
+    columns?: string[],
+) => {
+    let query: SearchRequest = {
+        index: index.toLowerCase(),
+        query: {
+            bool: {
+              must: [
+                {
+                  match_all: {}
+                }
+              ],
+              filter: [
+                {
+                  terms: {
+                    "trackedEntityInstance.keyword": trackedEntityInstances
+                  }
+                }
+              ]
+            }
+        },
+        size: 1000,
+    };
+
+    if (columns) {
+        query = { ...query, _source: columns };
+    }
+    console.log(query)
+    const scrollSearch = client.helpers.scrollSearch(query);
+    let documents: any[] = [];
+    if( Object.keys(scrollSearch).length > 0){
+        for await (const result of scrollSearch) {
+            documents = documents.concat(result.documents);
+        }
+        return groupBy(documents, "trackedEntityInstance");
+    }
+    return {};
+    
+};
+
+
 export const scroll3 = async (
     index: string,
     search: QueryDslQueryContainer,
@@ -1467,12 +1510,17 @@ export const queryDHIS2Data = async ({
         if (pageCount === 1) {
             params.totalPages = true;
         }
-        console.log(`Fetching data for page ${pageCount} of ${totalPageCount}`);
+        console.log(`Fetching ${ program } data for page ${pageCount} of ${totalPageCount}`);
         const {
-            data: { trackedEntityInstances, pager },
+            data: { 
+                trackedEntityInstances, 
+                pager 
+            },
         } = await api.get<{
             trackedEntityInstances: Array<any>;
-            pager: { pageCount: number };
+            pager: { 
+                pageCount: number 
+            };
         }>("trackedEntityInstances.json", { params });
 
         if (pageCount === 1 && pager.pageCount) {

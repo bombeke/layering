@@ -125,13 +125,11 @@ const fetchData = async (trackedEntityInstances: any[]) => {
         "SxnXrDtSJZp",
         trackedEntityInstanceIds,
     );
-    const allHVATAssessments = await scroll("sYE3K7fFM4Y", allInstances);
-    const indexCases = await scroll("HEWq6yr4cs5", allInstances);
-    console.log("indexCases", indexCases);
+    const indexCases = await scroll4("HEWq6yr4cs5", allInstances);
+    const allHVATAssessments = await scroll("sYE3K7fFM4Y", allInstances); // use indexCases instead of allInstances
     const allGraduationAssessments = await scroll(
         "Cx35Elpu330",
         allInstances,
-
         ["trackedEntityInstance,eventDate,XPJtNCSNCdR"],
     );
     const allIndividualGraduationAssessments = await scroll(
@@ -266,6 +264,7 @@ const generateLayering = (options: {
         level5,
     } of trackedEntityInstances) {
         const homeVisits = getEvents(allHomeVisits, trackedEntityInstance);
+        console.log("Home visits:",homeVisits)
         const graduationAssessments = getEvents(
             allIndividualGraduationAssessments,
             trackedEntityInstance,
@@ -327,20 +326,20 @@ const generateLayering = (options: {
             trackedEntityInstance,
             beneficiaryId: HLKc2AKR9jW,
             e0zEpTw7IH6,
-            tHCT4RKXoiU, // Household code
+            householdCode: tHCT4RKXoiU, // Household code
             enrollmentDate,
             type: l4jlzkYsUoR,
             district,
             subCounty,
             parish: orgUnitName,
             village: Xkwy5P2JG24,
-            IyKRQFkfwMk,
+            IyKRQFkfwMk, // name of service provider
             householdHead: ExnzeYjgIaT,
             beneficiaryName: huFucxA3e5c,
-            N1nMqKtYKvI,
+            /// N1nMqKtYKvI, // see dob
             sex: CfpoFtRmK1z,
-            umqeJCVp4Zq,
-            householdCode: r10igcWrpoH, // Household code
+            umqeJCVp4Zq, // see on_HIV_ART
+            /// householdCode: r10igcWrpoH, // Household code check
             level1,
             level2,
             level3,

@@ -29,9 +29,14 @@ const fetchData = async (trackedEntityInstances: any[]) => {
     const trackedEntityInstanceIds = trackedEntityInstances.map(
         (tei) => tei.trackedEntityInstance,
     );
-    const allSessions = await scroll("fTCSYlAqD2S", trackedEntityInstanceIds);
+    
+    const allGroupActivitySessions = await scroll("VzkQBBglj3O", trackedEntityInstanceIds);
+    const allGroupActivityBeneficiaries = await scroll("aTZwDRoJnxj", trackedEntityInstanceIds);
+    const allOldGroupActivitySessions = await scroll("EVkAS8LJNbO", trackedEntityInstanceIds);
     return {
-        allSessions,
+        allSessions: allGroupActivitySessions,
+        allGroupActivityBeneficiaries,
+        allOldGroupActivitySessions 
     };
 };
 const fetchActivities = async () => {
@@ -63,6 +68,8 @@ const generateLayering = (options: {
     periods: dayjs.Dayjs[];
     allSessions: { [key: string]: any[] };
     activities: any;
+    allGroupActivityBeneficiaries: { [key: string]: any[] };
+    allOldGroupActivitySessions: { [key: string]: any[] };
 }) => {
     const { trackedEntityInstances, allSessions, periods, activities } =
         options;
@@ -78,9 +85,9 @@ const generateLayering = (options: {
     for (const {
         X4pNSt9UzOw,
         XzKmUgJRlRa,
-        huFucxA3e5c,
-        CfpoFtRmK1z,
-        N1nMqKtYKvI,
+        huFucxA3e5c, // name of beneficiary
+        CfpoFtRmK1z, // sex
+        N1nMqKtYKvI, // dob
         enrollmentDate,
         deleted,
         inactive,
@@ -342,9 +349,9 @@ const generateLayering = (options: {
 
             layering.push({
                 X4pNSt9UzOw,
-                huFucxA3e5c,
-                CfpoFtRmK1z,
-                N1nMqKtYKvI,
+                beneficiaryName: huFucxA3e5c,
+                sex: CfpoFtRmK1z,
+                dob: N1nMqKtYKvI,
                 enrollmentDate,
                 deleted,
                 inactive,
@@ -389,7 +396,7 @@ const worker = new Worker<QueryDslQueryContainer>(
         console.log("=============Starting Layering 2 Job ==============");
         try {
             const activities = await fetchActivities();
-            await scroll3("lMC8XN5Lanc", job.data, async (documents) => {
+            await scroll3("RDEklSXCD4C", job.data, async (documents) => {
                 const allData = await fetchData(documents);
                 const layering = generateLayering({
                     ...allData,

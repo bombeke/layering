@@ -42,7 +42,6 @@ const worker = new Worker<
             },
         });
         try {
-            console.log("Fetching organisation units");
             const {
                 data: { organisationUnits },
             } = await api.get<{
@@ -63,6 +62,16 @@ const worker = new Worker<
                     processedUnits,
                     api,
                     program: "HEWq6yr4cs5",
+                });
+            }
+            else if( program === "IXxHJADVCkb"){
+                console.log("=== Starting indexing for Group Activity Program ===");
+                await queryDHIS2Data({
+                    ...others,
+                    page,
+                    processedUnits,
+                    api,
+                    program: "IXxHJADVCkb",
                 });
             }
             else{
@@ -105,7 +114,8 @@ const worker = new Worker<
                                         "trackedEntityInstance.keyword": c3,
                                     },
                                 };
-                                await layering3Queue.add(
+                                // changed from 3 to 2
+                                await layering2Queue.add(
                                     String(new Date().getMilliseconds),
                                     query3,
                                 );
