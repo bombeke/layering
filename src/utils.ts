@@ -123,15 +123,14 @@ export const scroll = async (
         query = { ...query, _source: columns };
     }
     const scrollSearch = client.helpers.scrollSearch(query);
-    let documents: any[] = [];
-    if( Object.keys(scrollSearch).length > 0){
-        for await (const result of scrollSearch) {
-            documents = documents.concat(result.documents);
-        }
-        return groupBy(documents, "trackedEntityInstance");
+    if (!scrollSearch || typeof scrollSearch[Symbol.asyncIterator] !== 'function') {
+        console.log("scrollSearch is not iterable");
     }
-    return {};
-    
+    let documents: any[] = [];
+    for await (const result of scrollSearch) {
+        documents = documents.concat(result.documents);
+    }
+    return groupBy(documents, "trackedEntityInstance");  
 };
 
 export const scroll2 = async (index: string) => {
@@ -143,11 +142,12 @@ export const scroll2 = async (index: string) => {
         size: 1000,
     };
     const scrollSearch = client.helpers.scrollSearch(query);
+    if (!scrollSearch || typeof scrollSearch[Symbol.asyncIterator] !== 'function') {
+        console.log("scrollSearch is not iterable");
+    }
     let documents: any[] = [];
-    if( Object.keys(scrollSearch).length > 0){
-        for await (const result of scrollSearch) {
-            documents = documents.concat(result.documents);
-        }
+    for await (const result of scrollSearch) {
+        documents = documents.concat(result.documents);
     }
     return documents;
 };
@@ -181,17 +181,15 @@ export const scroll4 = async (
     if (columns) {
         query = { ...query, _source: columns };
     }
-    console.log(query)
     const scrollSearch = client.helpers.scrollSearch(query);
-    let documents: any[] = [];
-    if( Object.keys(scrollSearch).length > 0){
-        for await (const result of scrollSearch) {
-            documents = documents.concat(result.documents);
-        }
-        return groupBy(documents, "trackedEntityInstance");
+    if (!scrollSearch || typeof scrollSearch[Symbol.asyncIterator] !== 'function') {
+        console.log("scrollSearch is not iterable");
     }
-    return {};
-    
+    let documents: any[] = [];
+    for await (const result of scrollSearch) {
+        documents = documents.concat(result.documents);
+    }
+    return groupBy(documents, "trackedEntityInstance");
 };
 
 
