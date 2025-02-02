@@ -2,7 +2,7 @@ module.exports = {
     apps: [
       {
         name: "search-index-app",
-        script: "pnpm prod:app",
+        script: "pnpm dev:app",
         //args: "run src/index.ts",
         instances: 1, // Number of instances to run (e.g., scale to multiple CPUs)
         exec_mode: "cluster",

@@ -386,25 +386,31 @@ const generateLayering = (options: {
 const worker = new Worker<QueryDslQueryContainer>(
     "layering2",
     async (job) => {
-        const activities = await fetchActivities();
-        await scroll3("lMC8XN5Lanc", job.data, async (documents) => {
-            const allData = await fetchData(documents);
-            const layering = generateLayering({
-                ...allData,
-                periods: [
-                    dayjs().subtract(6, "quarters"),
-                    dayjs().subtract(5, "quarters"),
-                    dayjs().subtract(4, "quarters"),
-                    dayjs().subtract(3, "quarters"),
-                    dayjs().subtract(2, "quarters"),
-                    dayjs().subtract(1, "quarters"),
-                    dayjs(),
-                ],
-                trackedEntityInstances: documents,
-                activities,
+        console.log("=============Starting Layering 2 Job ==============");
+        try {
+            const activities = await fetchActivities();
+            await scroll3("lMC8XN5Lanc", job.data, async (documents) => {
+                const allData = await fetchData(documents);
+                const layering = generateLayering({
+                    ...allData,
+                    periods: [
+                        dayjs().subtract(6, "quarters"),
+                        dayjs().subtract(5, "quarters"),
+                        dayjs().subtract(4, "quarters"),
+                        dayjs().subtract(3, "quarters"),
+                        dayjs().subtract(2, "quarters"),
+                        dayjs().subtract(1, "quarters"),
+                        dayjs(),
+                    ],
+                    trackedEntityInstances: documents,
+                    activities,
+                });
+                await indexBulk("layering2", layering);
             });
-            await indexBulk("layering2", layering);
-        });
+        }
+        catch(e){
+            console.log("Layering 2 worker error:",e)
+        }
     },
     { connection },
 );

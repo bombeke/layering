@@ -8,6 +8,7 @@ import { processOrganisations, queryDHIS2Data } from "./utils";
 import { layering2Queue } from "./layering2Queue";
 import { layering3Queue } from "./layering3Queue";
 import "dotenv/config"; 
+import { chunk } from "lodash";
 
 export const dhis2Queue = new Queue<
     {
@@ -28,6 +29,7 @@ const worker = new Worker<
 >(
     "dhis2",
     async (job) => {
+        console.log("=============Starting DHIS2 Job ==============");
         let { page = 1, program, generate, ...others } = job.data;
         const api = axios.create({
             baseURL: process.env.DHIS2_URL,
@@ -53,7 +55,7 @@ const worker = new Worker<
                 },
             });
             const processedUnits = processOrganisations(organisationUnits);
-            console.log("Querying DHIS2 for indexing");
+
             await queryDHIS2Data({
                 program,
                 page,
@@ -69,25 +71,27 @@ const worker = new Worker<
                  * @param data - array of tracked entity instance ids
                  */
                 callback: async (data: string[]) => {
-                    console.log("Adding data to layering queues",generate,"1:",data.length,"2:",program);
+                    console.log("Adding data to layering queues: ",data.length," items for program - ",program);
                     if (
                         generate &&
                         data.length > 0 &&
                         program === "RDEklSXCD4C"
                     ) {
-                        const query: QueryDslQueryContainer = {
-                            terms: {
-                                "trackedEntityInstance.keyword": data,
-                            },
-                        };
-                        await layeringQueue.add(
-                            String(new Date().getMilliseconds),
-                            query,
-                        );
-                        await layering3Queue.add(
-                            String(new Date().getMilliseconds),
-                            query,
-                        );
+                        chunk(data, 250).map(async(c) =>{
+                            const query: QueryDslQueryContainer = {
+                                terms: {
+                                    "trackedEntityInstance.keyword": c,
+                                },
+                            };
+                            await layeringQueue.add(
+                                String(new Date().getMilliseconds),
+                                query,
+                            );
+                            await layering3Queue.add(
+                                String(new Date().getMilliseconds),
+                                query,
+                            );
+                        });
                     } 
                     else if (
                         generate &&
@@ -109,7 +113,8 @@ const worker = new Worker<
                     }
                 },
             });
-        } catch (error) {
+        } 
+        catch (error) {
             console.log("DHIS2 queue worker error:",error);
         }
     },

@@ -395,25 +395,31 @@ const generateLayering = (options: {
 const worker = new Worker<QueryDslQueryContainer>(
     "layering3",
     async (job) => {
-        const activities = await fetchActivities();
-        await scroll3("RDEklSXCD4C", job.data, async (documents) => {
-            const allData = await fetchData(documents);
-            const layering = generateLayering({
-                ...allData,
-                periods: [
-                    dayjs().subtract(6, "quarters"),
-                    dayjs().subtract(5, "quarters"),
-                    dayjs().subtract(4, "quarters"),
-                    dayjs().subtract(3, "quarters"),
-                    dayjs().subtract(2, "quarters"),
-                    dayjs().subtract(1, "quarters"),
-                    dayjs(),
-                ],
-                trackedEntityInstances: documents,
-                activities,
+        console.log("=============Starting Layering 3 Job ==============");
+        try {
+            const activities = await fetchActivities();
+            await scroll3("RDEklSXCD4C", job.data, async (documents) => {
+                const allData = await fetchData(documents);
+                const layering = generateLayering({
+                    ...allData,
+                    periods: [
+                        dayjs().subtract(6, "quarters"),
+                        dayjs().subtract(5, "quarters"),
+                        dayjs().subtract(4, "quarters"),
+                        dayjs().subtract(3, "quarters"),
+                        dayjs().subtract(2, "quarters"),
+                        dayjs().subtract(1, "quarters"),
+                        dayjs(),
+                    ],
+                    trackedEntityInstances: documents,
+                    activities,
+                });
+                await indexBulk("layering3", layering);
             });
-            await indexBulk("layering3", layering);
-        });
+        } 
+        catch (error) {
+            console.log("Layering 3 queue worker error:",error);
+        }
     },
     { connection },
 );

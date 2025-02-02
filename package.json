@@ -2,11 +2,11 @@
     "scripts": {
         "dev": "tsx watch src/index.ts",
         "dev:app": "tsx src/index.ts",
-        "prod:app": "bun run src/index.ts",
         "build": "tsc"
     },
     "dependencies": {
-        "@elastic/elasticsearch": "^8.13.1",
+        "@elastic/elasticsearch": "=8.2.1",
+        "@elastic/transport": "=8.2.0",
         "@hono/node-server": "^1.11.1",
         "@hono/zod-validator": "^0.2.1",
         "axios": "^1.6.8",

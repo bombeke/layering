@@ -128,8 +128,10 @@ export const scroll = async (
         for await (const result of scrollSearch) {
             documents = documents.concat(result.documents);
         }
+        return groupBy(documents, "trackedEntityInstance");
     }
-    return groupBy(documents, "trackedEntityInstance");
+    return {};
+    
 };
 
 export const scroll2 = async (index: string) => {
@@ -155,19 +157,37 @@ export const scroll3 = async (
     search: QueryDslQueryContainer,
     callback: (doc: any[]) => Promise<void>,
 ) => {
-    let query: SearchRequest = {
-        index: index.toLowerCase(),
-        query: search,
-        size: 100,
-    };
-    const scrollSearch = client.helpers.scrollSearch(query);
-    if( Object.keys(scrollSearch).length > 0){
-        for await (const result of scrollSearch) {
-            await callback(result.documents);
+    try {
+        if (!index || !search || !callback) {
+            throw new Error("Invalid arguments passed to scroll3");
         }
+        let query: SearchRequest = {
+            index: index.toLowerCase(),
+            query: search,
+            size: 100,
+        };
+
+        const scrollSearch = client.helpers.scrollSearch(query);
+
+        if (!scrollSearch || typeof scrollSearch[Symbol.asyncIterator] !== 'function') {
+            console.log("scrollSearch is not iterable");
+            await callback([]);
+        }
+        for await (const result of scrollSearch) {
+            if (result && result.documents) {
+                await callback(result.documents);
+            } else {
+                console.log("No documents found in the current scroll result");
+                await callback([]);
+            }
+        }
+    } 
+    catch (error) {
+        console.error("Scroll search failed:", error);
+        await callback([]); // Ensure callback is still executed even on failure
     }
-    console.log("Done");
 };
+
 
 export const getEconomicStatus = (hvat: any) => {
     if (hvat) {
@@ -1217,36 +1237,18 @@ export const insertData = async ({
     program: string;
 }) => {
     const foundEvents = groupBy(calculatedEvents, "programStage");
-    if(Object.entries(foundEvents).length === 0) {
-        return [];
-    }
-    else{
-        const requests = Object.entries(foundEvents).flatMap(([stage, events]) => {
-            if (events.length === 0) {
-                return [];
-            }
-            else{
-                console.log("Start promise stage")
-                const chunkedEvents = chunk(events, 250).map((c) => indexBulk(stage.toLowerCase(), c));
-                console.log("Reached end of promise stage");
-                return chunkedEvents;
-            }
-        });
-        if(instances.length === 0) {
+    const requests = Object.entries(foundEvents || {}).flatMap(([stage, events]) => {
+        if (events.length === 0) {
             return [];
         }
         else{
-            console.log("start of promise")
-            await Promise.all([
-                ...chunk(instances, 250).map((c) =>
-                    indexBulk(program.toLowerCase(), c),
-                ),
-                ...requests,
-            ]);
-            console.log("Reached end of promise");
-            return [];
+            return chunk(events, 250).map((c) => indexBulk(stage.toLowerCase(), c));
         }
-    }
+    });
+    await Promise.all([
+        ...chunk(instances || [], 250).map((c) =>indexBulk(program.toLowerCase(), c)),
+        ...requests,
+    ]);
 };
 
 export const convertBoolToYesNo = (value: "true" | "false") => {
@@ -1450,7 +1452,7 @@ export const queryDHIS2Data = async ({
     }>;
     callback?: (instances: string[]) => void;
 } & Record<string, any>) => {
-    const maxPages = 10000;
+    const maxPages = 150;
     const instances: string[] = [];
     const calculatedEvents: any[] = [];
 
@@ -1465,7 +1467,7 @@ export const queryDHIS2Data = async ({
         if (pageCount === 1) {
             params.totalPages = true;
         }
-
+        console.log(`Fetching data for page ${pageCount} of ${totalPageCount}`);
         const {
             data: { trackedEntityInstances, pager },
         } = await api.get<{
@@ -1476,7 +1478,6 @@ export const queryDHIS2Data = async ({
         if (pageCount === 1 && pager.pageCount) {
             totalPageCount = pager.pageCount;
         }
-
         if (trackedEntityInstances.length > 0) {
             const { instances: newInstances, calculatedEvents: newEvents } = flattenInstances(
                 trackedEntityInstances,
@@ -1484,15 +1485,18 @@ export const queryDHIS2Data = async ({
             );
             instances.push(...(newInstances as any));
             calculatedEvents.push(...newEvents);
-            if (callback) {
-                callback(instances);
-            }
         }
     }
     console.log("Processing instances: ",instances.length);
     if (instances.length > 0) {
         console.log("========== Start inserting index data ==========");
         await insertData({ instances, calculatedEvents, program });
+        if (callback) {
+            callback(instances);
+        }
+    }
+    else{
+        console.log("No instances found to index");
     }
 };
 

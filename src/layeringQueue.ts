@@ -52,6 +52,7 @@ import {
     removeEmptyKeys,
     scroll,
     scroll3,
+    scroll4
 } from "./utils";
 import { logger } from "./logger";
 
@@ -59,7 +60,7 @@ dayjs.extend(isoWeek);
 dayjs.extend(quarterOfYear);
 dayjs.extend(advancedFormat);
 
-export const layeringQueue = new Queue<QueryDslQueryContainer>("query", {
+export const layeringQueue = new Queue<QueryDslQueryContainer | any[]>("query", {
     connection,
 });
 
@@ -88,7 +89,6 @@ const processPreviousLayering = (layering: Dictionary<any[]>) => {
 };
 
 const previousLayering = async (trackedEntityInstances: string[]) => {
-    console.log("test1")
     const layering = await scroll("layering", trackedEntityInstances, [
         "trackedEntityInstance",
         "qtr",
@@ -96,7 +96,6 @@ const previousLayering = async (trackedEntityInstances: string[]) => {
         "fullyGraduated",
         "preGraduated",
     ]);
-    console.log("test2")
     return processPreviousLayering(layering);
 };
 
@@ -111,19 +110,15 @@ const fetchData = async (trackedEntityInstances: any[]) => {
     const trackedEntityInstanceIds = trackedEntityInstances.map(
         (tei) => tei.trackedEntityInstance,
     );
-    console.log("1")
     const allInstances = uniq(
         trackedEntityInstances.map(({ hly709n51z0 }) => hly709n51z0),
     ).filter((v) => !!v);
     const previousLayer = await previousLayering(trackedEntityInstanceIds);
-    console.log("2")
     const allHomeVisits = await scroll("HaaSLv2ur0l", trackedEntityInstanceIds);
-    console.log("3")
     const allHivRiskAssessments = await scroll(
         "B9EI27lmQrZ",
         trackedEntityInstanceIds,
     );
-    console.log("4")
     const allViralLoads = await scroll("kKlAyGUnCML", trackedEntityInstanceIds);
     const allReferrals = await scroll("yz3zh5IFEZm", trackedEntityInstanceIds);
     const allServiceLinkages = await scroll(
@@ -1894,12 +1889,10 @@ const generateLayering = (options: {
 const worker = new Worker<QueryDslQueryContainer>(
     "query",
     async (job) => {
-        try {
-            console.log("=============Starting Layering Job ==============");
+        console.log("=============Starting Layering Job ==============");
+        try {   
             await scroll3("RDEklSXCD4C", job.data, async (documents) => {
-                console.log("=============Fetching Data==============",documents);
                 const allData = await fetchData(documents);
-                console.log("=============Generating Layering==============");
                 const layering = generateLayering({
                     ...allData,
                     periods: [

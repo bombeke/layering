@@ -1,22 +1,22 @@
-// @ts-nocheck
 import { Client } from "@elastic/elasticsearch";
-import { BulkResponse } from "@elastic/elasticsearch/lib/api/types";
-import chunk from 'lodash/chunk';
+import { BulkStats } from "@elastic/elasticsearch/lib/helpers";
+
 
 export const client = new Client({ 
-    node: "http://localhost:9200"
+    node: "http://localhost:9200",
+    auth: {
+        username: "elastic",
+        password: "password"
+    }
 });
 
-const processBulkInserts = (inserted: BulkResponse) => {
-    const total = inserted.items.length;
-    const errors = inserted.items.flatMap(({ index }) => {
-        if (index?.error) return index.error?.caused_by;
-        return [];
-    });
+const processBulkInserts = (inserted: BulkStats) => {
+    const total = inserted.total;
+    const failed = inserted.failed;
+    const successful= inserted.successful;
 
-    console.log(`Total:${total}`);
-    console.log(`Errors:${errors.length}`);
-    console.log(errors);
+    console.log(`Total: ${total} Failed: ${failed} Successful: ${successful}`);
+
 };
 
 /**
@@ -27,22 +27,26 @@ const processBulkInserts = (inserted: BulkResponse) => {
  * @returns An array of promises that resolve when the respective chunk of documents has been indexed.
  */
 export const indexBulk = async (index: string, data: any[]) => {
-    const body = data.flatMap((doc) =>{
-        return [
-            { 
-                index: { 
-                    _index: index, 
-                    //_id: doc["id"] 
-                } 
-            },
-            doc,
-        ];
-    });
-    const response = await client.bulk({
-        refresh: true,
-        body
-    });
-    console.log("Response:",response)
-    console.log("===============Indexed========")
-    return processBulkInserts(response);
+    if(data.length > 0){
+        const body = data.flatMap(({id, ...doc}) => [
+                { 
+                    index: { 
+                        _index: index, 
+                        _id: id
+                    } 
+                },
+                doc,
+            ]
+        );
+        const response = await client.helpers.bulk({
+            refresh: true,
+            datasource: data,
+            onDocument: (doc)=> ({ index: { _index: index, _id: doc.id } })
+        });
+        console.log("===============Indexed========")
+        return processBulkInserts(response);
+    }
+    else{
+        console.log("Nothing to index.")
+    }
 };
