@@ -264,7 +264,6 @@ const generateLayering = (options: {
         level5,
     } of trackedEntityInstances) {
         const homeVisits = getEvents(allHomeVisits, trackedEntityInstance);
-        console.log("Home visits:",homeVisits)
         const graduationAssessments = getEvents(
             allIndividualGraduationAssessments,
             trackedEntityInstance,
