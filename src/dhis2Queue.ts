@@ -96,7 +96,7 @@ const worker = new Worker<
                             data.length > 0 &&
                             program === "RDEklSXCD4C"
                         ) {
-                            /*chunk(data, 250).map(async(c) =>{
+                            chunk(data, 250).map(async(c) =>{
                                 const query: QueryDslQueryContainer = {
                                     terms: {
                                         "trackedEntityInstance.keyword": c,
@@ -107,7 +107,7 @@ const worker = new Worker<
                                     query,
                                 );
                             });
-                            */
+                            
                             chunk(data, 250).map(async(c3) =>{
                                 const query3: QueryDslQueryContainer = {
                                     terms: {
