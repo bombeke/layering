@@ -304,7 +304,7 @@ const generateLayering = (options: {
         );
         const GBVScreenings = getEvents(allGBVScreening, trackedEntityInstance);
         const hasEnrollment = !!enrollmentDate;
-
+       
         const HVATAssessments = allHVATAssessments[hly709n51z0] || [];
 
         const {
