@@ -12,6 +12,8 @@ import {
     findAgeGroup,
     eventsWithinPeriod,
     scroll2,
+    fetchGroupActivities4Instances,
+    scroll4,
 } from "./utils";
 import { indexBulk } from "./elasticsearch";
 import sessions from "./sessions.json";
@@ -30,7 +32,7 @@ const fetchData = async (trackedEntityInstances: any[]) => {
     const trackedEntityInstanceIds = trackedEntityInstances.map(
         (tei) => tei.trackedEntityInstance,
     );
-    const allInstances = uniq(
+    const allRelatedInstances = uniq(
         trackedEntityInstances.map(({ hly709n51z0 }) => hly709n51z0),
     ).filter((v) => !!v);
     // Group activity instances
@@ -38,17 +40,30 @@ const fetchData = async (trackedEntityInstances: any[]) => {
     const gaInstanceIds = allGaInstances.map(
         (tei) => tei.trackedEntityInstance,
     );
-
+    const allMemberCodes = uniq(
+        trackedEntityInstances.flatMap(({ HLKc2AKR9jW }) => {
+            if (HLKc2AKR9jW) return HLKc2AKR9jW;
+            return [];
+        }),
+    );
+    const allGroupActivitiesMemberCodes = await scroll4(
+        "VzkQBBglj3O",
+        allMemberCodes,
+        ["ypDUCAS6juy","trackedEntityInstance"],
+        "ypDUCAS6juy"
+    );
+    const gaGatInstanceIds = Object.entries(allGroupActivitiesMemberCodes).map(
+        ([code,tei]: any[]) => ({[code]: uniq(tei.map((t: any) => t.trackedEntityInstance))})
+    );
+     //n20LkH4ZBF8
     const allGroupActivitySessions = await scroll("VzkQBBglj3O", gaInstanceIds); //trackedEntityInstance,eventDate,ypDUCAS6juy
     const allGroupActivityBeneficiaries = await scroll("aTZwDRoJnxj", gaInstanceIds);
-    //const allOldGroupActivitySessions = await scroll("EVkAS8LJNbO", trackedEntityInstanceIds);
-
-    console.log("Fetched all group activity sessions",allGroupActivitySessions);
-    //console.log("Fetched all group activity sessions",allOldGroupActivitySessions);
+    const allOldGroupActivitySessions = await scroll("EVkAS8LJNbO", trackedEntityInstanceIds);
+    console.log("Member codes:", gaGatInstanceIds);
     return {
         allSessions: allGroupActivitySessions,
         allGroupActivityBeneficiaries,
-       // allOldGroupActivitySessions 
+        allOldGroupActivitySessions 
     };
 };
 /**

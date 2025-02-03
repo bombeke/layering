@@ -110,10 +110,9 @@ const fetchData = async (trackedEntityInstances: any[]) => {
     const trackedEntityInstanceIds = trackedEntityInstances.map(
         (tei) => tei.trackedEntityInstance,
     );
-    const allInstances = uniq(
+    const allRelatedInstances = uniq(
         trackedEntityInstances.map(({ hly709n51z0 }) => hly709n51z0),
     ).filter((v) => !!v);
-    console.log("Instances:", allInstances[0]);
     const previousLayer = await previousLayering(trackedEntityInstanceIds);
     const allHomeVisits = await scroll("HaaSLv2ur0l", trackedEntityInstanceIds);
     const allHivRiskAssessments = await scroll(
@@ -126,12 +125,11 @@ const fetchData = async (trackedEntityInstances: any[]) => {
         "SxnXrDtSJZp",
         trackedEntityInstanceIds,
     );
-    const indexCases = await scroll4("HEWq6yr4cs5", allInstances);
-    console.log("Index Cases:", indexCases);
-    const allHVATAssessments = await scroll("sYE3K7fFM4Y", allInstances); // use indexCases instead of allInstances
+    const indexCases = await scroll4("HEWq6yr4cs5", allRelatedInstances);
+    const allHVATAssessments = await scroll("sYE3K7fFM4Y", allRelatedInstances); // use indexCases instead of allRelatedInstances
     const allGraduationAssessments = await scroll(
         "Cx35Elpu330",
-        allInstances,
+        allRelatedInstances,
         ["trackedEntityInstance,eventDate,XPJtNCSNCdR"],
     );
     const allIndividualGraduationAssessments = await scroll(
@@ -314,11 +312,7 @@ const generateLayering = (options: {
             ExnzeYjgIaT = "",
             IyKRQFkfwMk = "",
             r10igcWrpoH = "",
-        } = indexCases
-            ? indexCases[hly709n51z0] && indexCases[hly709n51z0].length > 0
-                ? indexCases[hly709n51z0][0]
-                : {}
-            : {};
+        } = indexCases?.[hly709n51z0]?.[0] ?? {};
 
         let allPreviousLayering = previousLayering[trackedEntityInstance] || {};
 
