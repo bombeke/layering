@@ -96,11 +96,9 @@ export const checkIndexExists = async (indexName: string) => {
     try {
       const statusCode  = await client.indices.exists({ index: indexName });
       if (statusCode) {
-        console.log(`Index "${indexName}" exists.`);
         return true;
       } 
       else {
-        console.log(`Index "${indexName}" does not exist.`);
         return false;
       }
     } 
@@ -152,7 +150,7 @@ export const scroll = async (
         return groupBy(documents, "trackedEntityInstance");  
     }
     else{
-        console.log("Index does not exist. Skipping scroll.");
+        console.log(`Index ${ index.toLowerCase() } does not exist. Skipping scroll.`);
         return {}
     }
 };
@@ -184,7 +182,7 @@ export const scroll2 = async (index: string) => {
         return documents;
     }
     else{
-        console.log("Index does not exist. Skipping scroll.");
+        console.log(`Index ${ index.toLowerCase() } does not exist. Skipping scroll.`);
         return []
     }
 };
@@ -193,6 +191,7 @@ export const scroll4 = async (
     index: string,
     trackedEntityInstances: string[],
     columns?: string[],
+    searchBy: string = "trackedEntityInstance"
 ) => {
     let query: SearchRequest = {
         index: index.toLowerCase(),
@@ -206,7 +205,7 @@ export const scroll4 = async (
               filter: [
                 {
                   terms: {
-                    "trackedEntityInstance.keyword": trackedEntityInstances
+                    [`${searchBy}.keyword`]: trackedEntityInstances
                   }
                 }
               ]
@@ -228,10 +227,10 @@ export const scroll4 = async (
         for await (const result of scrollSearch) {
             documents = documents.concat(result.documents);
         }
-        return groupBy(documents, "trackedEntityInstance");
+        return groupBy(documents, searchBy);
     }    
     else{
-        console.log("Index does not exist. Skipping scroll.");
+        console.log(`Index ${ index.toLowerCase() } does not exist. Skipping scroll.`);
         return {};
     }
 };
@@ -269,7 +268,7 @@ export const scroll3 = async (
             }
         }
         else{
-            console.log("Index does not exist. Skipping scroll.");
+            console.log(`Index ${ index.toLowerCase() } does not exist. Skipping scroll.`);
             await callback([]);
         }
     } 
@@ -1135,6 +1134,7 @@ export const missedAppointmentInfo = (
 
 export const fetchGroupActivities4Instances = async (
     trackedEntityInstances: any[],
+    programStage: string = "VzkQBBglj3O" 
 ) => {
     const allMemberCodes = uniq(
         trackedEntityInstances.flatMap(({ HLKc2AKR9jW }) => {
@@ -1145,7 +1145,7 @@ export const fetchGroupActivities4Instances = async (
     if (allMemberCodes.length > 0) {
         let data: any[] = [];
         await scroll3(
-            "VzkQBBglj3O",
+            programStage.toLowerCase(),
             {
                 terms: {
                     ["ypDUCAS6juy.keyword"]: allMemberCodes,
@@ -1583,18 +1583,12 @@ export const queryDHIS2Data = async ({
             calculatedEvents.push(...newEvents);
         }
     }
-    console.log("Processing instances: ",instances.length, " for ", program);
-    if (instances.length > 0) {
-        await insertData({ instances, calculatedEvents, program });
-        if (callback) {
-            callback(instances);
-        }
-        return instances
+    console.log("Processing instances: ",instances.length, " and ",calculatedEvents.length," events for ", program);
+    await insertData({ instances, calculatedEvents, program });
+    if (callback) {
+        callback(instances);
     }
-    else{
-        console.log("No instances found to index");
-        return []
-    }
+    return instances
 };
 
 

@@ -30,7 +30,7 @@ const worker = new Worker<
     "dhis2",
     async (job) => {
         console.log("=============Starting DHIS2 Job ==============");
-        let { page = 1, program, generate, ...others } = job.data;
+        let { page = 1, program, generate, index = false, ...others } = job.data;
         const api = axios.create({
             baseURL: process.env.DHIS2_URL,
             auth: {
@@ -54,24 +54,14 @@ const worker = new Worker<
                 },
             });
             const processedUnits = processOrganisations(organisationUnits);
-            if( program === "HEWq6yr4cs5"){
-                console.log("=== Starting indexing for HouseHold Program ===");
+            if(program && index){
+                console.log(`=== Starting indexing for ${ program } Program ===`);
                 await queryDHIS2Data({
                     ...others,
                     page,
                     processedUnits,
                     api,
-                    program: "HEWq6yr4cs5",
-                });
-            }
-            else if( program === "IXxHJADVCkb"){
-                console.log("=== Starting indexing for Group Activity Program ===");
-                await queryDHIS2Data({
-                    ...others,
-                    page,
-                    processedUnits,
-                    api,
-                    program: "IXxHJADVCkb",
+                    program: program,
                 });
             }
             else{
