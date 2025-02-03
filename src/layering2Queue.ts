@@ -30,6 +30,9 @@ const fetchData = async (trackedEntityInstances: any[]) => {
     const trackedEntityInstanceIds = trackedEntityInstances.map(
         (tei) => tei.trackedEntityInstance,
     );
+    const allInstances = uniq(
+        trackedEntityInstances.map(({ hly709n51z0 }) => hly709n51z0),
+    ).filter((v) => !!v);
     // Group activity instances
     const allGaInstances = await scroll2("IXxHJADVCkb");
     const gaInstanceIds = allGaInstances.map(

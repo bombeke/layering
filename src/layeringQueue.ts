@@ -113,6 +113,7 @@ const fetchData = async (trackedEntityInstances: any[]) => {
     const allInstances = uniq(
         trackedEntityInstances.map(({ hly709n51z0 }) => hly709n51z0),
     ).filter((v) => !!v);
+    console.log("Instances:", allInstances[0]);
     const previousLayer = await previousLayering(trackedEntityInstanceIds);
     const allHomeVisits = await scroll("HaaSLv2ur0l", trackedEntityInstanceIds);
     const allHivRiskAssessments = await scroll(
@@ -126,6 +127,7 @@ const fetchData = async (trackedEntityInstances: any[]) => {
         trackedEntityInstanceIds,
     );
     const indexCases = await scroll4("HEWq6yr4cs5", allInstances);
+    console.log("Index Cases:", indexCases);
     const allHVATAssessments = await scroll("sYE3K7fFM4Y", allInstances); // use indexCases instead of allInstances
     const allGraduationAssessments = await scroll(
         "Cx35Elpu330",
