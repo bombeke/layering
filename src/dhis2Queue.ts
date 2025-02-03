@@ -76,11 +76,11 @@ const worker = new Worker<
             }
             else{
                 await queryDHIS2Data({
+                    ...others,
                     program,
                     page,
                     processedUnits,
                     api,
-                    ...others,
                     /**
                      * Callback to be executed when data is fetched from dhis2.
                      * This callback is responsible for adding the data to the layering queues.
@@ -96,7 +96,7 @@ const worker = new Worker<
                             data.length > 0 &&
                             program === "RDEklSXCD4C"
                         ) {
-                            chunk(data, 250).map(async(c) =>{
+                            /*chunk(data, 250).map(async(c) =>{
                                 const query: QueryDslQueryContainer = {
                                     terms: {
                                         "trackedEntityInstance.keyword": c,
@@ -107,7 +107,7 @@ const worker = new Worker<
                                     query,
                                 );
                             });
-
+                            */
                             chunk(data, 250).map(async(c3) =>{
                                 const query3: QueryDslQueryContainer = {
                                     terms: {
@@ -140,6 +140,7 @@ const worker = new Worker<
                         else{
                             console.log("Not implemented");
                         }
+                        return;
                     },
                 });
             }

@@ -26,19 +26,43 @@ export const layering2Queue = new Queue<QueryDslQueryContainer>("layering2", {
 });
 
 const fetchData = async (trackedEntityInstances: any[]) => {
+    // Household member instances
     const trackedEntityInstanceIds = trackedEntityInstances.map(
         (tei) => tei.trackedEntityInstance,
     );
-    
-    const allGroupActivitySessions = await scroll("VzkQBBglj3O", trackedEntityInstanceIds);
-    const allGroupActivityBeneficiaries = await scroll("aTZwDRoJnxj", trackedEntityInstanceIds);
-    const allOldGroupActivitySessions = await scroll("EVkAS8LJNbO", trackedEntityInstanceIds);
+    // Group activity instances
+    const allGaInstances = await scroll2("IXxHJADVCkb");
+    const gaInstanceIds = allGaInstances.map(
+        (tei) => tei.trackedEntityInstance,
+    );
+
+    const allGroupActivitySessions = await scroll("VzkQBBglj3O", gaInstanceIds); //trackedEntityInstance,eventDate,ypDUCAS6juy
+    const allGroupActivityBeneficiaries = await scroll("aTZwDRoJnxj", gaInstanceIds);
+    //const allOldGroupActivitySessions = await scroll("EVkAS8LJNbO", trackedEntityInstanceIds);
+
+    console.log("Fetched all group activity sessions",allGroupActivitySessions);
+    //console.log("Fetched all group activity sessions",allOldGroupActivitySessions);
     return {
         allSessions: allGroupActivitySessions,
         allGroupActivityBeneficiaries,
-        allOldGroupActivitySessions 
+       // allOldGroupActivitySessions 
     };
 };
+/**
+ * 
+ * @returns 
+ *  
+    bFnIjGJpf9t: '1. VSLA Group', 
+    dqbuxC5GB1M: 'Activity',
+    D7wRx9mgwns: 'Venue',
+    mWyp85xIzXR: 'Sub Group',
+    Pll79WEVWHj: 'Descriptions',
+    oqabsHE0ZUI: 'GA-KM-01/KD-0062404',
+    Ah4eyDOBf51: 'ACORD',
+    cYDK0qZSri9: 'Group/Club Name/Other',
+    b76aEJUPnLy: '2024-08-28',
+
+ */
 const fetchActivities = async () => {
     const allSessions = await scroll2("IXxHJADVCkb");
     return allSessions.reduce((acc, session) => {
@@ -68,15 +92,13 @@ const generateLayering = (options: {
     periods: dayjs.Dayjs[];
     allSessions: { [key: string]: any[] };
     activities: any;
-    allGroupActivityBeneficiaries: { [key: string]: any[] };
-    allOldGroupActivitySessions: { [key: string]: any[] };
+    allGroupActivityBeneficiaries?: { [key: string]: any[] };
+    allOldGroupActivitySessions?: { [key: string]: any[] };
 }) => {
     
     const { trackedEntityInstances, allSessions, periods, activities } =
         options;
     let layering: any[] = [];
-    console.log("Activities",activities);
-    console.log("GP sessions",allSessions);
     const sessionMap = sessions.reduce<Record<string, string[]>>(
         (acc, session) => {
             acc[session.name] = session.options.map((o) => o.code);

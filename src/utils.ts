@@ -92,6 +92,23 @@ export const firstEvent = (events: any[], endDate: Dayjs) => {
     const eventsBeforeEndDate = eventsBeforePeriod(events, endDate);
     return minBy(eventsBeforeEndDate, "eventDate");
 };
+export const checkIndexExists = async (indexName: string) => {
+    try {
+      const statusCode  = await client.indices.exists({ index: indexName });
+      if (statusCode) {
+        console.log(`Index "${indexName}" exists.`);
+        return true;
+      } 
+      else {
+        console.log(`Index "${indexName}" does not exist.`);
+        return false;
+      }
+    } 
+    catch (error) {
+      console.error("Error checking index existence:", error);
+      return false;
+    }
+}
 export const scroll = async (
     index: string,
     trackedEntityInstances: string[],
@@ -122,34 +139,54 @@ export const scroll = async (
     if (columns) {
         query = { ...query, _source: columns };
     }
-    const scrollSearch = client.helpers.scrollSearch(query);
-    if (!scrollSearch || typeof scrollSearch[Symbol.asyncIterator] !== 'function') {
-        console.log("scrollSearch is not iterable");
+    const indexExist = await checkIndexExists(index.toLowerCase());
+    if (indexExist) {
+        const scrollSearch = client.helpers.scrollSearch(query);
+        if (!scrollSearch || typeof scrollSearch[Symbol.asyncIterator] !== 'function') {
+            console.log("scrollSearch is not iterable");
+        }
+        let documents: any[] = [];
+        for await (const result of scrollSearch) {
+            documents = documents.concat(result.documents);
+        }
+        return groupBy(documents, "trackedEntityInstance");  
     }
-    let documents: any[] = [];
-    for await (const result of scrollSearch) {
-        documents = documents.concat(result.documents);
+    else{
+        console.log("Index does not exist. Skipping scroll.");
+        return {}
     }
-    return groupBy(documents, "trackedEntityInstance");  
 };
 
 export const scroll2 = async (index: string) => {
     let query: SearchRequest = {
         index: index.toLowerCase(),
         query: {
-            match_all: {},
+            bool: {
+                must: [
+                    {
+                        match_all: {}, 
+                    }
+                ]
+            }
         },
         size: 1000,
     };
-    const scrollSearch = client.helpers.scrollSearch(query);
-    if (!scrollSearch || typeof scrollSearch[Symbol.asyncIterator] !== 'function') {
-        console.log("scrollSearch is not iterable");
+    const indexExist = await checkIndexExists(index.toLowerCase());
+    if (indexExist) {
+        const scrollSearch = client.helpers.scrollSearch(query);
+        if (!scrollSearch || typeof scrollSearch[Symbol.asyncIterator] !== 'function') {
+            console.log("scrollSearch is not iterable");
+        }
+        let documents: any[] = [];
+        for await (const result of scrollSearch) {
+            documents = documents.concat(result.documents);
+        }
+        return documents;
     }
-    let documents: any[] = [];
-    for await (const result of scrollSearch) {
-        documents = documents.concat(result.documents);
+    else{
+        console.log("Index does not exist. Skipping scroll.");
+        return []
     }
-    return documents;
 };
 
 export const scroll4 = async (
@@ -181,15 +218,22 @@ export const scroll4 = async (
     if (columns) {
         query = { ...query, _source: columns };
     }
-    const scrollSearch = client.helpers.scrollSearch(query);
-    if (!scrollSearch || typeof scrollSearch[Symbol.asyncIterator] !== 'function') {
-        console.log("scrollSearch is not iterable");
+    const indexExist = await checkIndexExists(index.toLowerCase());
+    if (indexExist) {
+        const scrollSearch = client.helpers.scrollSearch(query);
+        if (!scrollSearch || typeof scrollSearch[Symbol.asyncIterator] !== 'function') {
+            console.log("scrollSearch is not iterable");
+        }
+        let documents: any[] = [];
+        for await (const result of scrollSearch) {
+            documents = documents.concat(result.documents);
+        }
+        return groupBy(documents, "trackedEntityInstance");
+    }    
+    else{
+        console.log("Index does not exist. Skipping scroll.");
+        return {};
     }
-    let documents: any[] = [];
-    for await (const result of scrollSearch) {
-        documents = documents.concat(result.documents);
-    }
-    return groupBy(documents, "trackedEntityInstance");
 };
 
 
@@ -207,20 +251,26 @@ export const scroll3 = async (
             query: search,
             size: 100,
         };
+        const indexExist = await checkIndexExists(index.toLowerCase());
+        if (indexExist) { 
+            const scrollSearch = client.helpers.scrollSearch(query);
 
-        const scrollSearch = client.helpers.scrollSearch(query);
-
-        if (!scrollSearch || typeof scrollSearch[Symbol.asyncIterator] !== 'function') {
-            console.log("scrollSearch is not iterable");
-            await callback([]);
-        }
-        for await (const result of scrollSearch) {
-            if (result && result.documents) {
-                await callback(result.documents);
-            } else {
-                console.log("No documents found in the current scroll result");
+            if (!scrollSearch || typeof scrollSearch[Symbol.asyncIterator] !== 'function') {
+                console.log("scrollSearch is not iterable");
                 await callback([]);
             }
+            for await (const result of scrollSearch) {
+                if (result && result.documents) {
+                    await callback(result.documents);
+                } else {
+                    console.log("No documents found in the current scroll result");
+                    await callback([]);
+                }
+            }
+        }
+        else{
+            console.log("Index does not exist. Skipping scroll.");
+            await callback([]);
         }
     } 
     catch (error) {
@@ -1539,9 +1589,11 @@ export const queryDHIS2Data = async ({
         if (callback) {
             callback(instances);
         }
+        return instances
     }
     else{
         console.log("No instances found to index");
+        return []
     }
 };
 
