@@ -3,7 +3,7 @@ module.exports = {
       {
         name: "search-index-app",
         script: "pnpm",
-        args: "run src/index.ts",
+        args: "run ./src/index.ts",
         instances: 2, // Number of instances to run (e.g., scale to multiple CPUs)
         exec_mode: "fork",
         autorestart: true, // Restart on crash or failure
