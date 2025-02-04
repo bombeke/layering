@@ -14,6 +14,8 @@ import {
     scroll2,
     fetchGroupActivities4Instances,
     scroll4,
+    uniqueFlattenedData,
+    mergeArrays,
 } from "./utils";
 import { indexBulk } from "./elasticsearch";
 import sessions from "./sessions.json";
@@ -27,14 +29,16 @@ export const layering2Queue = new Queue<QueryDslQueryContainer>("layering2", {
     connection,
 });
 
+
 const fetchData = async (trackedEntityInstances: any[]) => {
     // Household member instances
     const trackedEntityInstanceIds = trackedEntityInstances.map(
         (tei) => tei.trackedEntityInstance,
     );
-    const allRelatedInstances = uniq(
+    /*const allRelatedHouseholdInstances = uniq(
         trackedEntityInstances.map(({ hly709n51z0 }) => hly709n51z0),
     ).filter((v) => !!v);
+    */
     // Group activity instances
     const allGaInstances = await scroll2("IXxHJADVCkb");
     const gaInstanceIds = allGaInstances.map(
@@ -52,18 +56,20 @@ const fetchData = async (trackedEntityInstances: any[]) => {
         ["ypDUCAS6juy","trackedEntityInstance"],
         "ypDUCAS6juy"
     );
-    const gaGatInstanceIds = Object.entries(allGroupActivitiesMemberCodes).map(
+    /*const gaGatInstanceIds = Object.entries(allGroupActivitiesMemberCodes).map(
         ([code,tei]: any[]) => ({[code]: uniq(tei.map((t: any) => t.trackedEntityInstance))})
-    );
-     //n20LkH4ZBF8
+    );*/
+    const filteredMemberCodes = uniqueFlattenedData(allGroupActivitiesMemberCodes);
+    const mergedGatMemberCodes = mergeArrays(allGaInstances, filteredMemberCodes, "trackedEntityInstance");
+
     const allGroupActivitySessions = await scroll("VzkQBBglj3O", gaInstanceIds); //trackedEntityInstance,eventDate,ypDUCAS6juy
     const allGroupActivityBeneficiaries = await scroll("aTZwDRoJnxj", gaInstanceIds);
     const allOldGroupActivitySessions = await scroll("EVkAS8LJNbO", trackedEntityInstanceIds);
-    console.log("Member codes:", gaGatInstanceIds);
     return {
         allSessions: allGroupActivitySessions,
         allGroupActivityBeneficiaries,
-        allOldGroupActivitySessions 
+        allOldGroupActivitySessions,
+        allGroupActivitiesMemberCodes: mergedGatMemberCodes
     };
 };
 /**
@@ -93,7 +99,7 @@ const mapping2: any = {
     "GAT. Bank Linkages Sessions": 5,
     "GAT. Early Childhood Development Sessions": 8,
     "GAT. JOURNEYS PLUS (LARA) Sessions": 18,
-    "GAT. MOH Journeys curriculum sessions": 22,
+    "GAT. MOH Journheys curriculum sessions": 22,
     "GAT. No means No sessions (Boys)": 4,
     "GAT. No means No sessions (Girls)": 4,
     "GAT. No means No sessions (Boys) New Curriculum": 8,
@@ -112,9 +118,10 @@ const generateLayering = (options: {
     activities: any;
     allGroupActivityBeneficiaries?: { [key: string]: any[] };
     allOldGroupActivitySessions?: { [key: string]: any[] };
+    allGroupActivitiesMemberCodes?: any[]; 
 }) => {
     
-    const { trackedEntityInstances, allSessions, periods, activities } =
+    const { trackedEntityInstances, allSessions, periods, activities,allGroupActivitiesMemberCodes=[] } =
         options;
     let layering: any[] = [];
     const sessionMap = sessions.reduce<Record<string, string[]>>(
@@ -125,312 +132,319 @@ const generateLayering = (options: {
         {},
     );
     for (const {
-        X4pNSt9UzOw,
-        XzKmUgJRlRa,
-        huFucxA3e5c, // name of beneficiary
-        CfpoFtRmK1z, // sex
-        N1nMqKtYKvI, // dob
-        HLKc2AKR9jW, //Main beneficiaryId
-        enrollmentDate,
-        deleted,
-        inactive,
-        orgUnit,
-        trackedEntityInstance,
-        orgUnitName,
-        district,
-        subCounty,
-        level1,
-        level2,
-        level3,
-        level4,
-        level5,
-    } of trackedEntityInstances) {
-        for (const period of periods) {
-            const quarterStart = period.startOf("quarter");
-            const quarterEnd = period.endOf("quarter");
-            const qtr = period.format("YYYY[Q]Q");
-            const id = `${trackedEntityInstance}${qtr}`;
-            const {
-                bFnIjGJpf9t,
-                dqbuxC5GB1M,
-                D7wRx9mgwns,
-                mWyp85xIzXR,
-                Pll79WEVWHj,
-                oqabsHE0ZUI,
-                Ah4eyDOBf51,
-                cYDK0qZSri9,
-                b76aEJUPnLy,
-                jtpmu5rCeer,
-            } = activities[XzKmUgJRlRa] ?? {
-                bFnIjGJpf9t: "",
-                dqbuxC5GB1M: "",
-                D7wRx9mgwns: "",
-                mWyp85xIzXR: "",
-                Pll79WEVWHj: "",
-                oqabsHE0ZUI: "",
-                Ah4eyDOBf51: "",
-                cYDK0qZSri9: "",
-                b76aEJUPnLy: "",
-                jtpmu5rCeer: "",
-                XzKmUgJRlRa: "",
-            };
-            const age = period.diff(
-                dayjs(N1nMqKtYKvI ? N1nMqKtYKvI : enrollmentDate),
-                "years",
-            );
-            const ageGroup = findAgeGroup(age);
-
-            const sessionsWithinQuarter = eventsWithinPeriod(
-                sessions,
-                quarterStart,
-                quarterEnd,
-            );
-            let availableSessions: Record<string, number> = Object.values(
-                sessionMap,
-            )
-                .flat()
-                .reduce<Record<string, number>>(
-                    (acc, code) => ({
-                        ...acc,
-                        [code]: 0,
-                    }),
-                    {},
+        Ah4eyDOBf51,
+        oqabsHE0ZUI,
+        cYDK0qZSri9
+        } of allGroupActivitiesMemberCodes){
+        for (const {
+            X4pNSt9UzOw,
+            XzKmUgJRlRa,
+            huFucxA3e5c, // name of beneficiary
+            CfpoFtRmK1z, // sex
+            N1nMqKtYKvI, // dob
+            HLKc2AKR9jW, //Main beneficiaryId
+            enrollmentDate,
+            deleted,
+            inactive,
+            orgUnit,
+            trackedEntityInstance,
+            orgUnitName,
+            district,
+            subCounty,
+            level1,
+            level2,
+            level3,
+            level4,
+            level5,
+        } of trackedEntityInstances) {
+            for (const period of periods) {
+                const quarterStart = period.startOf("quarter");
+                const quarterEnd = period.endOf("quarter");
+                const qtr = period.format("YYYY[Q]Q");
+                const id = `${trackedEntityInstance}${qtr}`;
+                const {
+                    bFnIjGJpf9t,
+                    dqbuxC5GB1M,
+                    D7wRx9mgwns,
+                    mWyp85xIzXR,
+                    Pll79WEVWHj,
+                    //oqabsHE0ZUI,
+                    //Ah4eyDOBf51,
+                    //cYDK0qZSri9,
+                    b76aEJUPnLy,
+                    jtpmu5rCeer,
+                } = activities[XzKmUgJRlRa] ?? {
+                    bFnIjGJpf9t: "",
+                    dqbuxC5GB1M: "",
+                    D7wRx9mgwns: "",
+                    mWyp85xIzXR: "",
+                    Pll79WEVWHj: "",
+                    oqabsHE0ZUI: "",
+                    Ah4eyDOBf51: "",
+                    cYDK0qZSri9: "",
+                    b76aEJUPnLy: "",
+                    jtpmu5rCeer: "",
+                    XzKmUgJRlRa: "",
+                };
+                const age = period.diff(
+                    dayjs(N1nMqKtYKvI ? N1nMqKtYKvI : enrollmentDate),
+                    "years",
                 );
-            let availableSessions2: Record<string, string[]> = {
-                "GAT. Bank Linkages Sessions": [],
-                "GAT. Early Childhood Development Sessions": [],
-                "GAT. JOURNEYS PLUS (LARA) Sessions": [],
-                "GAT. MOH Journeys curriculum sessions": [],
-                "GAT. No means No sessions (Boys)": [],
-                "GAT. No means No sessions (Girls)": [],
-                "GAT. No means No sessions (Boys) New Curriculum": [],
-                "GAT. SINOVUYO Sessions": [],
-                "GAT. VSLA Saving and Borrowing": [],
-                "GAT. Financial Literacy Sessions": [],
-                "GAT. Group VSLA methodology sessions": [],
-                "GAT. SPM Training Sessions": [],
-                "GAT. VSLA TOT/Refresher Sessions": [],
-            };
-            sessionsWithinQuarter.forEach((session) => {
-                const sessionCategory = session["qgikW8oSfNe"];
-                const currentSessions =
-                    session["ygHFm67aRqZ"]?.split(",") ?? [];
+                const ageGroup = findAgeGroup(age);
 
-                if (sessionCategory === "1. VSLA Group") {
-                    availableSessions2["GAT. Bank Linkages Sessions"] = [
-                        ...(availableSessions2["GAT. Bank Linkages Sessions"] ??
-                            []),
-                        ...currentSessions.filter(
-                            (s: string) =>
-                                sessionMap[
-                                    "GAT. Bank Linkages Sessions"
-                                ].indexOf(s) !== -1,
-                        ),
-                    ];
-                    availableSessions2["GAT. Financial Literacy Sessions"] = [
-                        ...(availableSessions2[
-                            "GAT. Financial Literacy Sessions"
-                        ] ?? []),
-                        ...currentSessions.filter(
-                            (s: string) =>
-                                sessionMap[
-                                    "GAT. Financial Literacy Sessions"
-                                ].indexOf(s) !== -1,
-                        ),
-                    ];
-                    availableSessions2["GAT. Group VSLA methodology sessions"] =
-                        [
+                const sessionsWithinQuarter = eventsWithinPeriod(
+                    sessions,
+                    quarterStart,
+                    quarterEnd,
+                );
+                let availableSessions: Record<string, number> = Object.values(
+                    sessionMap,
+                )
+                    .flat()
+                    .reduce<Record<string, number>>(
+                        (acc, code) => ({
+                            ...acc,
+                            [code]: 0,
+                        }),
+                        {},
+                    );
+                let availableSessions2: Record<string, string[]> = {
+                    "GAT. Bank Linkages Sessions": [],
+                    "GAT. Early Childhood Development Sessions": [],
+                    "GAT. JOURNEYS PLUS (LARA) Sessions": [],
+                    "GAT. MOH Journeys curriculum sessions": [],
+                    "GAT. No means No sessions (Boys)": [],
+                    "GAT. No means No sessions (Girls)": [],
+                    "GAT. No means No sessions (Boys) New Curriculum": [],
+                    "GAT. SINOVUYO Sessions": [],
+                    "GAT. VSLA Saving and Borrowing": [],
+                    "GAT. Financial Literacy Sessions": [],
+                    "GAT. Group VSLA methodology sessions": [],
+                    "GAT. SPM Training Sessions": [],
+                    "GAT. VSLA TOT/Refresher Sessions": [],
+                };
+                sessionsWithinQuarter.forEach((session) => {
+                    const sessionCategory = session["qgikW8oSfNe"];
+                    const currentSessions =
+                        session["ygHFm67aRqZ"]?.split(",") ?? [];
+
+                    if (sessionCategory === "1. VSLA Group") {
+                        availableSessions2["GAT. Bank Linkages Sessions"] = [
+                            ...(availableSessions2["GAT. Bank Linkages Sessions"] ??
+                                []),
+                            ...currentSessions.filter(
+                                (s: string) =>
+                                    sessionMap[
+                                        "GAT. Bank Linkages Sessions"
+                                    ].indexOf(s) !== -1,
+                            ),
+                        ];
+                        availableSessions2["GAT. Financial Literacy Sessions"] = [
                             ...(availableSessions2[
-                                "GAT. Group VSLA methodology sessions"
+                                "GAT. Financial Literacy Sessions"
                             ] ?? []),
                             ...currentSessions.filter(
                                 (s: string) =>
                                     sessionMap[
-                                        "GAT. Group VSLA methodology sessions"
+                                        "GAT. Financial Literacy Sessions"
                                     ].indexOf(s) !== -1,
                             ),
                         ];
-                    availableSessions2["GAT. SPM Training Sessions"] = [
-                        ...(availableSessions2["GAT. SPM Training Sessions"] ??
-                            []),
-                        ...currentSessions.filter(
-                            (s: string) =>
-                                sessionMap[
-                                    "GAT. SPM Training Sessions"
-                                ].indexOf(s) !== -1,
-                        ),
-                    ];
-                    availableSessions2["GAT. VSLA Saving and Borrowing"] = [
-                        ...(availableSessions2[
-                            "GAT. VSLA Saving and Borrowing"
-                        ] ?? []),
-                        ...currentSessions.filter(
-                            (s: string) =>
-                                sessionMap[
-                                    "GAT. VSLA Saving and Borrowing"
-                                ].indexOf(s) !== -1,
-                        ),
-                    ];
-                    availableSessions2["GAT. VSLA TOT/Refresher Sessions"] = [
-                        ...(availableSessions2[
-                            "GAT. VSLA TOT/Refresher Sessions"
-                        ] ?? []),
-                        ...currentSessions.filter(
-                            (s: string) =>
-                                sessionMap[
-                                    "GAT. VSLA TOT/Refresher Sessions"
-                                ].indexOf(s) !== -1,
-                        ),
-                    ];
-                } else if (sessionCategory === "2. Sinovuyo") {
-                    availableSessions2["GAT. SINOVUYO Sessions"] = [
-                        ...(availableSessions2["GAT. SINOVUYO Sessions"] ?? []),
-                        ...currentSessions.filter(
-                            (s: string) =>
-                                sessionMap["GAT. SINOVUYO Sessions"].indexOf(
-                                    s,
-                                ) !== -1,
-                        ),
-                    ];
-                } else if (sessionCategory === "3. Journeys Plus") {
-                    availableSessions2["GAT. JOURNEYS PLUS (LARA) Sessions"] = [
-                        ...(availableSessions2[
-                            "GAT. JOURNEYS PLUS (LARA) Sessions"
-                        ] ?? []),
-                        ...currentSessions.filter(
-                            (s: string) =>
-                                sessionMap[
-                                    "GAT. JOURNEYS PLUS (LARA) Sessions"
-                                ].indexOf(s) !== -1,
-                        ),
-                    ];
-                    availableSessions2[
-                        "GAT. MOH Journeys curriculum sessions"
-                    ] = [
-                        ...(availableSessions2[
+                        availableSessions2["GAT. Group VSLA methodology sessions"] =
+                            [
+                                ...(availableSessions2[
+                                    "GAT. Group VSLA methodology sessions"
+                                ] ?? []),
+                                ...currentSessions.filter(
+                                    (s: string) =>
+                                        sessionMap[
+                                            "GAT. Group VSLA methodology sessions"
+                                        ].indexOf(s) !== -1,
+                                ),
+                            ];
+                        availableSessions2["GAT. SPM Training Sessions"] = [
+                            ...(availableSessions2["GAT. SPM Training Sessions"] ??
+                                []),
+                            ...currentSessions.filter(
+                                (s: string) =>
+                                    sessionMap[
+                                        "GAT. SPM Training Sessions"
+                                    ].indexOf(s) !== -1,
+                            ),
+                        ];
+                        availableSessions2["GAT. VSLA Saving and Borrowing"] = [
+                            ...(availableSessions2[
+                                "GAT. VSLA Saving and Borrowing"
+                            ] ?? []),
+                            ...currentSessions.filter(
+                                (s: string) =>
+                                    sessionMap[
+                                        "GAT. VSLA Saving and Borrowing"
+                                    ].indexOf(s) !== -1,
+                            ),
+                        ];
+                        availableSessions2["GAT. VSLA TOT/Refresher Sessions"] = [
+                            ...(availableSessions2[
+                                "GAT. VSLA TOT/Refresher Sessions"
+                            ] ?? []),
+                            ...currentSessions.filter(
+                                (s: string) =>
+                                    sessionMap[
+                                        "GAT. VSLA TOT/Refresher Sessions"
+                                    ].indexOf(s) !== -1,
+                            ),
+                        ];
+                    } else if (sessionCategory === "2. Sinovuyo") {
+                        availableSessions2["GAT. SINOVUYO Sessions"] = [
+                            ...(availableSessions2["GAT. SINOVUYO Sessions"] ?? []),
+                            ...currentSessions.filter(
+                                (s: string) =>
+                                    sessionMap["GAT. SINOVUYO Sessions"].indexOf(
+                                        s,
+                                    ) !== -1,
+                            ),
+                        ];
+                    } else if (sessionCategory === "3. Journeys Plus") {
+                        availableSessions2["GAT. JOURNEYS PLUS (LARA) Sessions"] = [
+                            ...(availableSessions2[
+                                "GAT. JOURNEYS PLUS (LARA) Sessions"
+                            ] ?? []),
+                            ...currentSessions.filter(
+                                (s: string) =>
+                                    sessionMap[
+                                        "GAT. JOURNEYS PLUS (LARA) Sessions"
+                                    ].indexOf(s) !== -1,
+                            ),
+                        ];
+                        availableSessions2[
                             "GAT. MOH Journeys curriculum sessions"
-                        ] ?? []),
-                        ...currentSessions.filter(
-                            (s: string) =>
-                                sessionMap[
-                                    "GAT. MOH Journeys curriculum sessions"
-                                ].indexOf(s) !== -1,
-                        ),
-                    ];
-                } else if (sessionCategory === "4. NMN") {
-                    availableSessions2["GAT. No means No sessions (Boys)"] = [
-                        ...(availableSessions2[
-                            "GAT. No means No sessions (Boys)"
-                        ] ?? []),
-                        ...currentSessions.filter(
-                            (s: string) =>
-                                sessionMap[
-                                    "GAT. No means No sessions (Boys)"
-                                ].indexOf(s) !== -1,
-                        ),
-                    ];
-                    availableSessions2[
-                        "GAT. No means No sessions (Boys) New Curriculum"
-                    ] = [
-                        ...(availableSessions2[
+                        ] = [
+                            ...(availableSessions2[
+                                "GAT. MOH Journeys curriculum sessions"
+                            ] ?? []),
+                            ...currentSessions.filter(
+                                (s: string) =>
+                                    sessionMap[
+                                        "GAT. MOH Journeys curriculum sessions"
+                                    ].indexOf(s) !== -1,
+                            ),
+                        ];
+                    } else if (sessionCategory === "4. NMN") {
+                        availableSessions2["GAT. No means No sessions (Boys)"] = [
+                            ...(availableSessions2[
+                                "GAT. No means No sessions (Boys)"
+                            ] ?? []),
+                            ...currentSessions.filter(
+                                (s: string) =>
+                                    sessionMap[
+                                        "GAT. No means No sessions (Boys)"
+                                    ].indexOf(s) !== -1,
+                            ),
+                        ];
+                        availableSessions2[
                             "GAT. No means No sessions (Boys) New Curriculum"
-                        ] ?? []),
-                        ...currentSessions.filter(
-                            (s: string) =>
-                                sessionMap[
-                                    "GAT. No means No sessions (Boys) New Curriculum"
-                                ].indexOf(s) !== -1,
-                        ),
-                    ];
-                    availableSessions2["GAT. No means No sessions (Girls)"] = [
-                        ...(availableSessions2[
-                            "GAT. No means No sessions (Girls)"
-                        ] ?? []),
-                        ...currentSessions.filter(
-                            (s: string) =>
-                                sessionMap[
-                                    "GAT. No means No sessions (Girls)"
-                                ].indexOf(s) !== -1,
-                        ),
-                    ];
-                } else if (
-                    sessionCategory === "7. Early Childhood Development (ECD)"
-                ) {
-                    availableSessions2[
-                        "GAT. Early Childhood Development Sessions"
-                    ] = [
-                        ...(availableSessions2[
+                        ] = [
+                            ...(availableSessions2[
+                                "GAT. No means No sessions (Boys) New Curriculum"
+                            ] ?? []),
+                            ...currentSessions.filter(
+                                (s: string) =>
+                                    sessionMap[
+                                        "GAT. No means No sessions (Boys) New Curriculum"
+                                    ].indexOf(s) !== -1,
+                            ),
+                        ];
+                        availableSessions2["GAT. No means No sessions (Girls)"] = [
+                            ...(availableSessions2[
+                                "GAT. No means No sessions (Girls)"
+                            ] ?? []),
+                            ...currentSessions.filter(
+                                (s: string) =>
+                                    sessionMap[
+                                        "GAT. No means No sessions (Girls)"
+                                    ].indexOf(s) !== -1,
+                            ),
+                        ];
+                    } else if (
+                        sessionCategory === "7. Early Childhood Development (ECD)"
+                    ) {
+                        availableSessions2[
                             "GAT. Early Childhood Development Sessions"
-                        ] ?? []),
-                        ...currentSessions.filter(
-                            (s: string) =>
-                                sessionMap[
-                                    "GAT. Early Childhood Development Sessions"
-                                ].indexOf(s) !== -1,
-                        ),
-                    ];
-                } else if (sessionCategory === "5. Stepping Stones") {
-                }
-                currentSessions.forEach((v: string) => {
-                    availableSessions[v] = 1;
+                        ] = [
+                            ...(availableSessions2[
+                                "GAT. Early Childhood Development Sessions"
+                            ] ?? []),
+                            ...currentSessions.filter(
+                                (s: string) =>
+                                    sessionMap[
+                                        "GAT. Early Childhood Development Sessions"
+                                    ].indexOf(s) !== -1,
+                            ),
+                        ];
+                    } else if (sessionCategory === "5. Stepping Stones") {
+                    }
+                    currentSessions.forEach((v: string) => {
+                        availableSessions[v] = 1;
+                    });
                 });
-            });
 
-            const availableSessions3 = Object.entries(
-                availableSessions2,
-            ).reduce<Record<string, number>>((acc, [key, value]) => {
-                acc[key] = uniq(value).length;
-                return acc;
-            }, {});
+                const availableSessions3 = Object.entries(
+                    availableSessions2,
+                ).reduce<Record<string, number>>((acc, [key, value]) => {
+                    acc[key] = uniq(value).length;
+                    return acc;
+                }, {});
 
-            const availableSessions4 = Object.entries(
-                availableSessions3,
-            ).reduce<Record<string, number>>((acc, [key, value]) => {
-                acc[`Completed ${key}`] = value >= mapping2[key] ? 1 : 0;
-                return acc;
-            }, {});
+                const availableSessions4 = Object.entries(
+                    availableSessions3,
+                ).reduce<Record<string, number>>((acc, [key, value]) => {
+                    acc[`Completed ${key}`] = value >= mapping2[key] ? 1 : 0;
+                    return acc;
+                }, {});
 
-            layering.push({
-                //beneficiaryId: X4pNSt9UzOw,
-                beneficiaryId:  HLKc2AKR9jW,
-                beneficiaryName: huFucxA3e5c,
-                sex: CfpoFtRmK1z,
-                dob: N1nMqKtYKvI,
-                enrollmentDate,
-                deleted,
-                inactive,
-                orgUnit,
-                trackedEntityInstance,
-                orgUnitName,
-                district,
-                subCounty,
-                level1,
-                level2,
-                level3,
-                level4,
-                level5,
-                ageGroup,
-                age,
-                qtr,
-                id,
-                bFnIjGJpf9t,
-                dqbuxC5GB1M,
-                D7wRx9mgwns,
-                mWyp85xIzXR,
-                Pll79WEVWHj,
-                oqabsHE0ZUI,
-                Ah4eyDOBf51,
-                cYDK0qZSri9,
-                b76aEJUPnLy,
-                jtpmu5rCeer,
-                XzKmUgJRlRa,
-                ...availableSessions,
-                ...availableSessions3,
-                ...availableSessions4,
-            });
+                layering.push({
+                    //beneficiaryId: X4pNSt9UzOw,
+                    beneficiaryId:  HLKc2AKR9jW,
+                    beneficiaryName: huFucxA3e5c,
+                    sex: CfpoFtRmK1z,
+                    dob: N1nMqKtYKvI,
+                    enrollmentDate,
+                    deleted,
+                    inactive,
+                    orgUnit,
+                    trackedEntityInstance,
+                    orgUnitName,
+                    district,
+                    subCounty,
+                    level1,
+                    level2,
+                    level3,
+                    level4,
+                    level5,
+                    ageGroup,
+                    age,
+                    qtr,
+                    id,
+                    bFnIjGJpf9t,
+                    dqbuxC5GB1M,
+                    D7wRx9mgwns,
+                    mWyp85xIzXR,
+                    Pll79WEVWHj,
+                    oqabsHE0ZUI,
+                    Ah4eyDOBf51,
+                    cYDK0qZSri9,
+                    implentingPartner: Ah4eyDOBf51,
+                    groupName: cYDK0qZSri9,
+                    b76aEJUPnLy,
+                    jtpmu5rCeer,
+                    XzKmUgJRlRa,
+                    ...availableSessions,
+                    ...availableSessions3,
+                    ...availableSessions4,
+                });
+            }
         }
     }
-
     return layering;
 };
 
