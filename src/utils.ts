@@ -36,6 +36,25 @@ const viralLoadStatuses: Record<string, string> = {
     "5": "Failed",
 };
 
+export const mergeArrays = (arr1: any[], arr2: any[], key: string) => {
+    const map = new Map();
+  
+    // Add objects from first array
+    arr1.forEach(obj => map.set(obj[key], { ...obj }));
+  
+    // Merge objects from second array
+    arr2.forEach(obj => {
+      map.set(obj[key], { ...map.get(obj[key]), ...obj });
+    });
+  
+    return Array.from(map.values());
+};
+export const uniqueFlattenedData = (data: any) => {
+    const uniqueDataMap = new Map<string, any>(
+        Object.values(data).flat().map((item: any) => [item.trackedEntityInstance, item])
+    );
+    return Array.from(uniqueDataMap.values());
+}
 export function removeEmptyKeys(obj: { [key: string]: any }): {
     [key: string]: any;
 } {
