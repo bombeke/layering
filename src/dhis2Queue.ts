@@ -28,7 +28,7 @@ const worker = new Worker<
     } & Record<string, any>
 >(
     "dhis2",
-    async (job) => {
+    async (job: { data: { [x: string]: any; page?: number | undefined; program: any; generate: any; index?: boolean | undefined; }; }) => {
         console.log("=============Starting DHIS2 Job ==============");
         let { page = 1, program, generate, index = false, ...others } = job.data;
         const api = axios.create({
@@ -142,10 +142,10 @@ const worker = new Worker<
     { connection },
 );
 
-worker.on("completed", (job) => {
+worker.on("completed", (job: any) => {
     console.log(`DHIS2 Job ${job.id} has completed!`);
 });
 
-worker.on("failed", (job, err) => {
+worker.on("failed", (job: any, err: any) => {
     console.log(`DHIS2 Job ${job?.id} has failed with ${err.message}`);
 });
