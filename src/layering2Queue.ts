@@ -135,7 +135,12 @@ const generateLayering = (options: {
         Ah4eyDOBf51,
         oqabsHE0ZUI,
         cYDK0qZSri9,
-        mWyp85xIzXR
+        mWyp85xIzXR,
+        bFnIjGJpf9t,
+        dqbuxC5GB1M,
+        D7wRx9mgwns,
+        Pll79WEVWHj,
+        b76aEJUPnLy,
         } of allGroupActivitiesMemberCodes){
         for (const {
             X4pNSt9UzOw,
@@ -164,15 +169,15 @@ const generateLayering = (options: {
                 const qtr = period.format("YYYY[Q]Q");
                 const id = `${trackedEntityInstance}${qtr}`;
                 const {
-                    bFnIjGJpf9t,
-                    dqbuxC5GB1M,
-                    D7wRx9mgwns,
+                    //bFnIjGJpf9t,
+                    //dqbuxC5GB1M,
+                   // D7wRx9mgwns,
                     //mWyp85xIzXR,
-                    Pll79WEVWHj,
+                    //Pll79WEVWHj,
                     //oqabsHE0ZUI,
                     //Ah4eyDOBf51,
                     //cYDK0qZSri9,
-                    b76aEJUPnLy,
+                    //b76aEJUPnLy,
                     jtpmu5rCeer,
                 } = activities[XzKmUgJRlRa] ?? {
                     bFnIjGJpf9t: "",
@@ -436,6 +441,7 @@ const generateLayering = (options: {
                     cYDK0qZSri9,
                     implentingPartner: Ah4eyDOBf51,
                     groupName: cYDK0qZSri9,
+                    completionDate: b76aEJUPnLy,
                     b76aEJUPnLy,
                     jtpmu5rCeer,
                     XzKmUgJRlRa,
