@@ -15,6 +15,7 @@ export const dhis2Queue = new Queue<
         program: string;
         generate: boolean;
         page?: number;
+        index?: boolean;
     } & Record<string, any>
 >("dhis2", {
     connection,
@@ -25,6 +26,7 @@ const worker = new Worker<
         program: string;
         generate: boolean;
         page?: number;
+        index?: boolean;
     } & Record<string, any>
 >(
     "dhis2",

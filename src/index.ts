@@ -186,7 +186,7 @@ app.post("/reset", async (c) => {
                 settings: {
                     "index.mapping.total_fields.limit": "10000",
                 },
-            });
+            } as any);
         } catch (error) {
             console.log(error);
         }
