@@ -103,10 +103,20 @@ app.post(
         "json",
         z.object({
             lastUpdatedDuration: z.string(),
+            deleteJob: z.boolean().optional(),
         }),
     ),
     async (c) => {
-        const { lastUpdatedDuration } = c.req.valid("json");
+        const { lastUpdatedDuration, deleteJob=false } = c.req.valid("json");
+        if(deleteJob){
+            const jobs: any[] = [];
+            const repeatableJobs = await scheduleQueue.getRepeatableJobs()
+            repeatableJobs.forEach(async job =>{
+                const deleted = await scheduleQueue.removeRepeatableByKey(job.key);
+                jobs.push(deleted)
+            })
+            return c.json(jobs);
+        }
         const job = await scheduleQueue.add(
             "scheduling",
             { lastUpdatedDuration },
