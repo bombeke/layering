@@ -1,5 +1,5 @@
-import { cpus } from "os";
-const totalCPUs = cpus().length;
+const os = require("os");
+const totalCPUs = os.cpus().length;
 const instances = Math.max(1, totalCPUs - 3);
 
 module.exports = {
