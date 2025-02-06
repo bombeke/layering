@@ -1,11 +1,15 @@
 {
     "compilerOptions": {
+        "target": "ESNext",
+        "module": "ESNext",
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
         "strict": true,
-        "target": "ES6",
         "jsx": "react-jsx",
         "jsxImportSource": "hono/jsx",
         "esModuleInterop": true,
         "resolveJsonModule": true,
+        "moduleResolution": "node",
         "outDir": "./dist"
     }
 }
